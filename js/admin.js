@@ -1445,6 +1445,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               <button class="btn-ghost-secondary btn-print-motoboy" data-order-id="${order.id}" style="font-size: 0.8rem; border-color: #f59e0b; color: #d97706;">
                 <i class="fi fi-sr-motorcycle"></i> Motoboy
               </button>` : ''}
+              ${(order.order_type === 'pickup' || order.order_type === 'retirada' || order.order_type === 'balcao' || (!order.order_type && !order.table_number)) ? `
+              <button class="btn-ghost-secondary btn-print-balcao" data-order-id="${order.id}" style="font-size: 0.8rem; border-color: #8b5cf6; color: #7c3aed;">
+                <i class="fi fi-sr-receipt"></i> Balcão
+              </button>` : ''}
             </div>
           </div>
         </div>
@@ -1494,6 +1498,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const orderId = btn.getAttribute('data-order-id');
         const order = adminState.orders.find(o => o.id === orderId);
         if (order) printMotoboyTicket(order);
+      });
+    });
+
+    dom.ordersListContainer.querySelectorAll('.btn-print-balcao').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orderId = btn.getAttribute('data-order-id');
+        const order = adminState.orders.find(o => o.id === orderId);
+        if (order) printBalcaoTicket(order);
       });
     });
   }
@@ -1762,6 +1774,75 @@ document.addEventListener('DOMContentLoaded', async () => {
           <hr />
           <div class="info">Subtotal: ${window.formatCurrency(order.subtotal)}</div>
           <div class="info">Taxa Entrega: ${window.formatCurrency(order.delivery_fee)}</div>
+          <div class="total-line">TOTAL: ${window.formatCurrency(order.total)}</div>
+          <div class="info"><strong>Pgto:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco p/ ${window.formatCurrency(order.change_for)})` : ''}</div>
+          ${order.notes ? `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
+  }
+
+  // ==========================================
+  // IMPRESSÃO — BALCÃO / RETIRADA (atendente)
+  // Informações completas para controle da atendente
+  // ==========================================
+  function printBalcaoTicket(order) {
+    const printWindow = window.open('', '_blank', 'width=320,height=400');
+    let itemsStr = '';
+    const orderItems = order.items || order.order_items || [];
+    orderItems.forEach(i => {
+      itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong> — ${window.formatCurrency(i.subtotal)}</div>`;
+      if (i.combo_choices && i.combo_choices.length > 0) {
+        itemsStr += `<div class="item-detail"><strong>${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
+      }
+      if (i.optionals && i.optionals.length > 0) {
+        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
+      }
+      if (i.notes) {
+        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
+      }
+    });
+
+    let typeStr = 'RETIRADA NO LOCAL';
+    if (order.order_type === 'balcao') {
+      typeStr = 'BALCÃO / VIAGEM';
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Balcão #${order.order_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
+            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+            .info { font-size: 13px; margin: 2px 0; }
+            .info-big { font-size: 15px; font-weight: bold; margin: 3px 0; }
+            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
+            .item-detail { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
+            .total-line { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            @media print {
+              html, body { width: 80mm; }
+              @page { margin: 0; size: 80mm auto; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>🧾 CONTROLE BALCÃO</h2>
+          <h3>PEDIDO #${String(order.order_number).padStart(4, '0')}</h3>
+          <hr />
+          <div class="info-big">${window.escapeHtml(order.customer_name || 'Cliente Balcão')}</div>
+          <div class="info"><strong>Fone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
+          <div class="info"><strong>Tipo:</strong> ${typeStr}</div>
+          <hr />
+          ${itemsStr}
+          <hr />
           <div class="total-line">TOTAL: ${window.formatCurrency(order.total)}</div>
           <div class="info"><strong>Pgto:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco p/ ${window.formatCurrency(order.change_for)})` : ''}</div>
           ${order.notes ? `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
