@@ -1,15 +1,10 @@
 // ========================================================
-// CONFIGURAÇÕES GERAIS E SUPABASE (BOYDEGUSTA)
+// CONFIGURAÇÕES GERAIS (BOYDEGUSTA)
+// Credenciais do Supabase removidas do frontend.
+// Toda comunicação com o banco ocorre via /.netlify/functions/api
 // ========================================================
 
-// Carrega as variáveis de ambiente do window.ENV (definidas em js/env.js)
-const env = window.ENV || {};
-
 const APP_CONFIG = {
-  // Configuração do Supabase (Carregada via js/env.js)
-  SUPABASE_URL: env.SUPABASE_URL || '',
-  SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY || '',
-
   // Dados Oficiais
   RESTAURANT_NAME: 'BoyDegusta',
   WHATSAPP_NUMBER: '5581992686946',

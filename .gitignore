@@ -1,9 +1,3 @@
-# Arquivos de Variáveis de Ambiente e Chaves Sensíveis
-js/env.js
-.env
-.env.local
-.env.*.local
-
 # Arquivos de sistema e editores
 .DS_Store
 Thumbs.db
@@ -11,3 +5,8 @@ Thumbs.db
 .idea/
 *.log
 
+# Arquivo de ambiente local (não existe mais no projeto)
+js/env.js
+.env
+.env.local
+.env.*.local
