@@ -217,6 +217,90 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ==========================================
+  // ==========================================
+  // HELPERS DE CATEGORIAS E PRODUTOS
+  // ==========================================
+  function isCategoryHiddenFromMainMenu(cat) {
+    if (!cat) return false;
+    const id = (cat.id || '').toLowerCase();
+    const slug = (cat.slug || '').toLowerCase();
+    const name = (cat.name || '').toLowerCase();
+
+    // Acompanhamentos e Adicionais não devem aparecer como seções/itens principais do cardápio
+    if (id === 'cat-adic' || id === 'cat-acomp') return true;
+    if (slug === 'adicional' || slug === 'adicionais' || slug.includes('adici')) return true;
+    if (slug === 'acompanhamento' || slug === 'acompanhamentos' || slug.includes('acomp')) return true;
+    if (name.includes('adicional') || name.includes('adicionais')) return true;
+    if (name.includes('acompanhamento') || name.includes('acompanhamentos')) return true;
+    return false;
+  }
+
+  function isProductNaBrasa(product) {
+    if (!product) return false;
+    const catId = product.category_id || '';
+    const cat = (state.categories || []).find(c => c.id === catId);
+    const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
+    const catName = cat ? (cat.name || '').toLowerCase() : '';
+    const prodName = (product.name || '').toLowerCase();
+    const prodDesc = (product.description || '').toLowerCase();
+
+    return catId === 'cat-brasa' ||
+           catSlug.includes('brasa') ||
+           catName.includes('brasa') ||
+           prodName.includes('brasa') ||
+           prodDesc.includes('na brasa') ||
+           prodDesc.includes('burguer na brasa');
+  }
+
+  function isProductNaChapa(product) {
+    if (!product) return false;
+    if (isProductNaBrasa(product)) return false;
+    const catId = product.category_id || '';
+    const cat = (state.categories || []).find(c => c.id === catId);
+    const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
+    const catName = cat ? (cat.name || '').toLowerCase() : '';
+    const prodName = (product.name || '').toLowerCase();
+
+    return catId === 'cat-burguer' ||
+           catSlug.includes('burguer') ||
+           catSlug.includes('chapa') ||
+           catName.includes('burguer') ||
+           catName.includes('chapa') ||
+           prodName.includes('burguer') ||
+           prodName.includes('burger');
+  }
+
+  function getFilteredOptionalsForProduct(product) {
+    const isBrasa = isProductNaBrasa(product);
+    const isChapa = isProductNaChapa(product);
+
+    return state.optionals.filter(opt => {
+      if (opt.is_active === false) return false;
+      const optName = (opt.name || '').toLowerCase();
+      const target = (opt.target || '').toLowerCase();
+
+      const isOptBrasa = target === 'brasa' || optName.includes('brasa');
+      const isOptChapa = target === 'chapa' || optName.includes('chapa');
+
+      // Se o hambúrguer for na Brasa, só mostra Adicional Carne Brasa + adicionais gerais (esconde Chapa)
+      if (isBrasa) {
+        if (isOptChapa) return false;
+        return true;
+      }
+
+      // Se o hambúrguer for na Chapa, só mostra Adicional Carne Chapa + adicionais gerais (esconde Brasa)
+      if (isChapa) {
+        if (isOptBrasa) return false;
+        return true;
+      }
+
+      // Para outros itens, oculta adicionais específicos de carne brasa/chapa
+      if (isOptBrasa || isOptChapa) return false;
+      return true;
+    });
+  }
+
+  // ==========================================
   // RENDERIZAÇÃO DAS CATEGORIAS & CARDÁPIO
   // ==========================================
   function renderCategoryNav() {
@@ -229,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
 
     state.categories.forEach(cat => {
+      if (isCategoryHiddenFromMainMenu(cat)) return;
       html += `
         <button class="category-pill-btn" data-cat="${cat.id}">
           ${cat.name}
@@ -316,6 +401,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let totalMatchingProducts = 0;
 
     state.categories.forEach(cat => {
+      if (isCategoryHiddenFromMainMenu(cat)) return;
+
       let categoryProducts = state.products.filter(p => p.category_id === cat.id);
 
       // Filtro de busca por nome, descrição ou categoria
@@ -440,11 +527,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       dom.productModalComboSection.style.display = 'none';
 
-      // Adicionais apenas para hambúrgueres (cat-burguer)
-      const isBurguer = product.category_id === 'cat-burguer';
+      // Adicionais para hambúrgueres (na chapa e na brasa)
+      const isBurguer = isProductNaBrasa(product) || isProductNaChapa(product) || product.category_id === 'cat-burguer' || product.category_id === 'cat-brasa';
       if (isBurguer) {
         dom.productModalOptionalsSection.style.display = 'block';
-        renderOptionalsList();
+        renderOptionalsList(product);
       } else {
         dom.productModalOptionalsSection.style.display = 'none';
         state.modalSelectedOptionals = [];
@@ -456,13 +543,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.productModal.style.display = 'flex';
   }
 
-  function renderOptionalsList() {
+  function renderOptionalsList(product) {
     if (!dom.productModalOptionalsList) return;
 
+    const currentProduct = product || state.currentModalProduct;
+    const filteredOptionals = getFilteredOptionalsForProduct(currentProduct);
+
+    if (filteredOptionals.length === 0) {
+      dom.productModalOptionalsSection.style.display = 'none';
+      return;
+    }
+
     let html = '';
-    state.optionals.forEach(opt => {
+    filteredOptionals.forEach(opt => {
+      const isSelected = state.modalSelectedOptionals.some(o => o.id === opt.id);
       html += `
-        <div class="optional-row" data-opt-id="${opt.id}">
+        <div class="optional-row ${isSelected ? 'selected' : ''}" data-opt-id="${opt.id}">
           <div class="optional-left">
             <div class="fake-checkbox">✓</div>
             <span class="optional-title-text">${opt.name}</span>

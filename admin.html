@@ -355,6 +355,7 @@
                 <tr>
                   <th>Nome</th>
                   <th>Preço Extra</th>
+                  <th>Aplicabilidade</th>
                   <th>Status</th>
                   <th>Ações</th>
                 </tr>
@@ -993,6 +994,14 @@
                 <option value="false">Inativo</option>
               </select>
             </div>
+          </div>
+          <div class="form-field-group">
+            <label class="form-field-label">Aplicabilidade do Adicional</label>
+            <select id="editOptTarget" class="form-text-input">
+              <option value="all">Todos os Hambúrgueres (Geral)</option>
+              <option value="brasa">Apenas Hambúrgueres na Brasa</option>
+              <option value="chapa">Apenas Hambúrgueres na Chapa</option>
+            </select>
           </div>
           <div style="display: flex; gap: 10px; margin-top: 18px;">
             <button type="submit" class="btn-submit-order" style="flex: 1;">Salvar Adicional</button>

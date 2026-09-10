@@ -31,10 +31,11 @@ const INITIAL_OPERATING_HOURS = [
 const INITIAL_OPTIONALS = [
   { id: 'opt-1', name: 'Adicional creme cheese', price: 3.00, is_active: true, order_index: 1 },
   { id: 'opt-2', name: 'Adicional Ovo', price: 2.00, is_active: true, order_index: 2 },
-  { id: 'opt-3', name: 'Adicional Carne', price: 5.00, is_active: true, order_index: 3 },
-  { id: 'opt-4', name: 'Adicional Bacon', price: 3.00, is_active: true, order_index: 4 },
-  { id: 'opt-5', name: 'Adicional maionese', price: 3.00, is_active: true, order_index: 5 },
-  { id: 'opt-6', name: 'GELEIA DE PIMENTA', price: 3.00, is_active: true, order_index: 6 }
+  { id: 'opt-3-brasa', name: 'Adicional Carne Brasa', price: 5.00, is_active: true, target: 'brasa', order_index: 3 },
+  { id: 'opt-3-chapa', name: 'Adicional Carne Chapa', price: 5.00, is_active: true, target: 'chapa', order_index: 4 },
+  { id: 'opt-4', name: 'Adicional Bacon', price: 3.00, is_active: true, order_index: 5 },
+  { id: 'opt-5', name: 'Adicional maionese', price: 3.00, is_active: true, order_index: 6 },
+  { id: 'opt-6', name: 'GELEIA DE PIMENTA', price: 3.00, is_active: true, order_index: 7 }
 ];
 
 const INITIAL_PROMOTIONS = [

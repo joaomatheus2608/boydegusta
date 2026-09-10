@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     editOptName: document.getElementById('editOptName'),
     editOptPrice: document.getElementById('editOptPrice'),
     editOptActive: document.getElementById('editOptActive'),
+    editOptTarget: document.getElementById('editOptTarget'),
 
     // Bairros & Taxas de Entrega
     btnOpenAddNeighborhood: document.getElementById('btnOpenAddNeighborhood'),
@@ -708,6 +709,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function isProductNaBrasa(product) {
+    if (!product) return false;
+    const catId = product.category_id || '';
+    const cat = (adminState.categories || []).find(c => c.id === catId);
+    const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
+    const catName = cat ? (cat.name || '').toLowerCase() : '';
+    const prodName = (product.name || '').toLowerCase();
+    const prodDesc = (product.description || '').toLowerCase();
+
+    return catId === 'cat-brasa' ||
+           catSlug.includes('brasa') ||
+           catName.includes('brasa') ||
+           prodName.includes('brasa') ||
+           prodDesc.includes('na brasa') ||
+           prodDesc.includes('burguer na brasa');
+  }
+
+  function isProductNaChapa(product) {
+    if (!product) return false;
+    if (isProductNaBrasa(product)) return false;
+    const catId = product.category_id || '';
+    const cat = (adminState.categories || []).find(c => c.id === catId);
+    const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
+    const catName = cat ? (cat.name || '').toLowerCase() : '';
+    const prodName = (product.name || '').toLowerCase();
+
+    return catId === 'cat-burguer' ||
+           catSlug.includes('burguer') ||
+           catSlug.includes('chapa') ||
+           catName.includes('burguer') ||
+           catName.includes('chapa') ||
+           prodName.includes('burguer') ||
+           prodName.includes('burger');
+  }
+
   function openPosItemCustomModal(product) {
     const isPromo = Boolean(product.is_promo);
     const basePrice = Number(product.price) || 0;
@@ -775,7 +811,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let optHtml = '';
-    const activeOptionals = (adminState.optionals || []).filter(o => o.is_active !== false);
+    const isBrasa = isProductNaBrasa(product);
+    const isChapa = isProductNaChapa(product);
+
+    const activeOptionals = (adminState.optionals || []).filter(opt => {
+      if (opt.is_active === false) return false;
+      const optName = (opt.name || '').toLowerCase();
+      const target = (opt.target || '').toLowerCase();
+
+      const isOptBrasa = target === 'brasa' || optName.includes('brasa');
+      const isOptChapa = target === 'chapa' || optName.includes('chapa');
+
+      // Se o hambúrguer for na Brasa, só mostra Adicional Carne Brasa + gerais (oculta Chapa)
+      if (isBrasa) {
+        if (isOptChapa) return false;
+        return true;
+      }
+
+      // Se o hambúrguer for na Chapa, só mostra Adicional Carne Chapa + gerais (oculta Brasa)
+      if (isChapa) {
+        if (isOptBrasa) return false;
+        return true;
+      }
+
+      // Outros itens
+      if (isOptBrasa || isOptChapa) return false;
+      return true;
+    });
+
     if (activeOptionals.length > 0) {
       dom.posCustomOptionalsSection.style.display = 'block';
       activeOptionals.forEach(opt => {
@@ -2293,10 +2356,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderOptionals() {
     let html = '';
     adminState.optionals.forEach(o => {
+      const optName = (o.name || '').toLowerCase();
+      const target = o.target || (optName.includes('brasa') ? 'brasa' : optName.includes('chapa') ? 'chapa' : 'all');
+      
+      let targetBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #e0f2fe; color: #0369a1;">Todos (Geral)</span>';
+      if (target === 'brasa') {
+        targetBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #fee2e2; color: #b91c1c;">🔥 Na Brasa</span>';
+      } else if (target === 'chapa') {
+        targetBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #fef3c7; color: #b45309;">🍳 Na Chapa</span>';
+      }
+
       html += `
         <tr>
           <td><strong>${window.escapeHtml(o.name)}</strong></td>
           <td><strong>+ ${window.formatCurrency(o.price)}</strong></td>
+          <td>${targetBadge}</td>
           <td>
             <span class="product-status-pill ${o.is_active !== false ? 'status-active' : 'status-inactive'}">
               ${o.is_active !== false ? 'Ativo' : 'Inativo'}
@@ -2345,12 +2419,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.editOptName.value = opt.name || '';
       dom.editOptPrice.value = opt.price !== undefined && opt.price !== null ? opt.price : '3.00';
       dom.editOptActive.value = String(opt.is_active !== false);
+      const optName = (opt.name || '').toLowerCase();
+      dom.editOptTarget.value = opt.target || (optName.includes('brasa') ? 'brasa' : optName.includes('chapa') ? 'chapa' : 'all');
     } else {
       dom.optionalModalTitle.textContent = 'Novo Adicional';
       dom.editOptId.value = '';
       dom.editOptName.value = '';
       dom.editOptPrice.value = '3.00';
       dom.editOptActive.value = 'true';
+      dom.editOptTarget.value = 'all';
     }
     dom.optionalEditModal.style.display = 'flex';
   }
@@ -2365,9 +2442,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const name = dom.editOptName.value.trim();
       const price = Number(dom.editOptPrice.value) || 0;
       const is_active = dom.editOptActive.value === 'true';
+      const target = dom.editOptTarget ? dom.editOptTarget.value : 'all';
 
       if (!name) return;
-      const payload = { name, price, is_active };
+      const payload = { name, price, is_active, target };
       if (id) payload.id = id;
 
       const saved = await window.db.saveOptional(payload);
