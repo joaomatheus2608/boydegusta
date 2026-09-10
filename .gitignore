@@ -1,0 +1,13 @@
+# Arquivos de Variáveis de Ambiente e Chaves Sensíveis
+js/env.js
+.env
+.env.local
+.env.*.local
+
+# Arquivos de sistema e editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
