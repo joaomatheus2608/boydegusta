@@ -300,6 +300,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function getProductEffectivePrice(product) {
+    if (!product) return 0;
+    const name = (product.name || '').toLowerCase();
+    const isPromo2Beirutes = name.includes('2 beirute') || (product.promo_id === 'promo-2') || (product.id === 'promo-2') || (product.id === 'prod-promo-2');
+    if (isPromo2Beirutes) {
+      const isMonday = new Date().getDay() === 1; // 1 = Segunda-feira
+      return isMonday ? 40.00 : 50.00;
+    }
+    return product.price !== null && product.price !== undefined ? Number(product.price) : 0;
+  }
+
   // ==========================================
   // RENDERIZAÇÃO DAS CATEGORIAS & CARDÁPIO
   // ==========================================
@@ -428,15 +439,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         categoryProducts.forEach(prod => {
           const isUnavailable = prod.is_available === false;
+          const isPromo2 = (prod.name || '').toLowerCase().includes('2 beirute') || (prod.promo_id === 'promo-2') || (prod.id === 'promo-2') || (prod.id === 'prod-promo-2');
+          const isMonday = new Date().getDay() === 1;
+          const effectivePrice = getProductEffectivePrice(prod);
           const formattedPrice = prod.price !== null && prod.price !== undefined
-            ? window.formatCurrency(prod.price)
+            ? window.formatCurrency(effectivePrice)
             : 'Preço a definir';
+
+          let promoBadgeHtml = prod.is_promo ? '<span class="badge-tag-promo">PROMO</span>' : '';
+          if (isPromo2) {
+            promoBadgeHtml = isMonday
+              ? '<span class="badge-tag-promo" style="background:#16a34a">PROMO SEGUNDA • R$ 40</span>'
+              : '<span class="badge-tag-promo" style="background:#d97706">2 BEIRUTES • R$ 50 (R$ 40 na Seg)</span>';
+          }
 
           html += `
             <div class="food-card ${isUnavailable ? 'card-unavailable' : ''}" data-product-id="${prod.id}">
               <div class="food-card-img-box">
                 <img class="food-card-img" src="${prod.image_url || 'boylogo.jpg'}" alt="${prod.name}" loading="lazy" />
-                ${prod.is_promo ? '<span class="badge-tag-promo">PROMO</span>' : ''}
+                ${promoBadgeHtml}
               </div>
               <div class="food-card-content">
                 <div>
@@ -520,8 +541,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.modalComboCounts[item] = 0;
       });
 
+      const effectivePrice = getProductEffectivePrice(product);
       renderComboSelectors(allowedItems, requiredQty);
-      dom.productModalPrice.textContent = window.formatCurrency(40.00);
+      dom.productModalPrice.textContent = window.formatCurrency(effectivePrice);
       dom.btnModalAddToCart.disabled = true;
       dom.btnModalAddToCart.textContent = `Escolha ${requiredQty} itens`;
     } else {
@@ -1225,9 +1247,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             .map(([name, qty]) => ({ name, qty }));
         }
 
+        const effectivePrice = getProductEffectivePrice(state.currentModalProduct);
+        const productToAdd = { ...state.currentModalProduct, price: effectivePrice };
         const notes = dom.productModalNotes.value;
         window.cart.addItem(
-          state.currentModalProduct,
+          productToAdd,
           state.modalQty,
           state.modalSelectedOptionals,
           notes,

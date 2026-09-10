@@ -54,9 +54,10 @@ const INITIAL_PROMOTIONS = [
   },
   {
     id: 'promo-2',
-    name: 'Promoção 2 Beirute por 40,00',
-    description: 'Escolha 2 beirutes por apenas R$ 40,00',
-    price: 40.00,
+    name: 'Promoção 2 Beirutes',
+    description: 'Escolha 2 beirutes (R$ 40,00 na Segunda-feira • R$ 50,00 nos demais dias)',
+    price: 50.00,
+    monday_price: 40.00,
     required_quantity: 2,
     allowed_items: [
       '1 Beirute Maminha',
@@ -97,9 +98,10 @@ const INITIAL_PRODUCTS = [
   {
     id: 'prod-promo-2',
     category_id: 'cat-promo',
-    name: 'Promoção 2 Beirute por 40,00',
-    description: 'Escolha 2 beirutes por apenas R$ 40,00. Opções: 1 Beirute Maminha, 1 Beirute Sol, 1 Beirute Camarão 3 Queijos.',
-    price: 40.00,
+    name: 'Promoção 2 Beirutes',
+    description: 'Escolha 2 beirutes (R$ 40,00 na Segunda-feira • R$ 50,00 nos demais dias). Opções: 1 Beirute Maminha, 1 Beirute Sol, 1 Beirute Camarão 3 Queijos.',
+    price: 50.00,
+    monday_price: 40.00,
     image_url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80',
     is_promo: true,
     is_active: true,

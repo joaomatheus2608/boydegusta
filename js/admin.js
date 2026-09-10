@@ -629,6 +629,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function getProductEffectivePrice(product) {
+    if (!product) return 0;
+    const name = (product.name || '').toLowerCase();
+    const isPromo2Beirutes = name.includes('2 beirute') || (product.promo_id === 'promo-2') || (product.id === 'promo-2') || (product.id === 'prod-promo-2');
+    if (isPromo2Beirutes) {
+      const isMonday = new Date().getDay() === 1; // 1 = Segunda-feira
+      return isMonday ? 40.00 : 50.00;
+    }
+    return product.price !== null && product.price !== undefined ? Number(product.price) : 0;
+  }
+
   function renderPosCatalog() {
     const query = (adminState.posSearch || '').toLowerCase().trim();
     let items = [];
@@ -636,11 +647,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (adminState.posActiveCategory === 'all' || adminState.posActiveCategory === 'promos') {
       (adminState.promotions || []).forEach(promo => {
         if (promo.is_active !== false) {
+          const effPrice = getProductEffectivePrice(promo);
           items.push({
             id: promo.id,
             name: promo.name,
             description: promo.description || 'Combo Promocional',
-            price: Number(promo.price) || 40,
+            price: effPrice,
             is_promo: true,
             required_quantity: promo.required_quantity || 3,
             allowed_items: promo.allowed_items || []
@@ -652,7 +664,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     (adminState.products || []).forEach(prod => {
       if (prod.is_active !== false && prod.is_available !== false) {
         if (adminState.posActiveCategory === 'all' || adminState.posActiveCategory === prod.category_id) {
-          items.push(prod);
+          const effPrice = getProductEffectivePrice(prod);
+          items.push({
+            ...prod,
+            price: effPrice
+          });
         }
       }
     });
@@ -746,7 +762,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function openPosItemCustomModal(product) {
     const isPromo = Boolean(product.is_promo);
-    const basePrice = Number(product.price) || 0;
+    const basePrice = getProductEffectivePrice(product);
 
     adminState.posCustomItemState = {
       product,
