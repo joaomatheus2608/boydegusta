@@ -1438,9 +1438,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <i class="fi fi-brands-whatsapp"></i> WhatsApp
                 </a>
               ` : ''}
-              <button class="btn-ghost-secondary btn-print-order" data-order-id="${order.id}" style="font-size: 0.8rem;">
-                <i class="fi fi-sr-print"></i> Imprimir
+              <button class="btn-ghost-secondary btn-print-kitchen" data-order-id="${order.id}" style="font-size: 0.8rem;">
+                <i class="fi fi-sr-print"></i> Cozinha
               </button>
+              ${order.order_type === 'delivery' ? `
+              <button class="btn-ghost-secondary btn-print-motoboy" data-order-id="${order.id}" style="font-size: 0.8rem; border-color: #f59e0b; color: #d97706;">
+                <i class="fi fi-sr-motorcycle"></i> Motoboy
+              </button>` : ''}
             </div>
           </div>
         </div>
@@ -1477,11 +1481,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    dom.ordersListContainer.querySelectorAll('.btn-print-order').forEach(btn => {
+    dom.ordersListContainer.querySelectorAll('.btn-print-kitchen').forEach(btn => {
       btn.addEventListener('click', () => {
         const orderId = btn.getAttribute('data-order-id');
         const order = adminState.orders.find(o => o.id === orderId);
-        if (order) printOrderTicket(order);
+        if (order) printKitchenTicket(order);
+      });
+    });
+
+    dom.ordersListContainer.querySelectorAll('.btn-print-motoboy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orderId = btn.getAttribute('data-order-id');
+        const order = adminState.orders.find(o => o.id === orderId);
+        if (order) printMotoboyTicket(order);
       });
     });
   }
@@ -1621,7 +1633,148 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ==========================================
-  // 3. GERENCIAMENTO DE PRODUTOS
+  // IMPRESSÃO — COZINHA (todos os tipos)
+  // Apenas itens e obs, sem preços ou dados do cliente
+  // ==========================================
+  function printKitchenTicket(order) {
+    const printWindow = window.open('', '_blank', 'width=320,height=400');
+    let itemsStr = '';
+    const orderItems = order.items || order.order_items || [];
+    orderItems.forEach(i => {
+      itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong></div>`;
+      if (i.combo_choices && i.combo_choices.length > 0) {
+        itemsStr += `<div class="item-detail"><strong>${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
+      }
+      if (i.optionals && i.optionals.length > 0) {
+        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
+      }
+      if (i.notes) {
+        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
+      }
+    });
+
+    let typeStr = 'RETIRADA';
+    if (order.order_type === 'mesa' || order.table_number) {
+      typeStr = `MESA 0${order.table_number || '?'}`;
+    } else if (order.order_type === 'balcao') {
+      typeStr = 'BALCÃO / VIAGEM';
+    } else if (order.order_type === 'delivery') {
+      typeStr = 'DELIVERY';
+    }
+
+    if (order.notes) {
+      itemsStr += `<div class="item-obs" style="margin-top:6px"><strong>*** OBS GERAL: ${window.escapeHtml(order.notes)} ***</strong></div>`;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cozinha #${order.order_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
+            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+            .tipo { text-align: center; font-weight: bold; font-size: 16px; margin: 3px 0; }
+            .item-line { font-size: 16px; font-weight: bold; margin: 5px 0 1px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 2px 0; text-decoration: underline; }
+            @media print {
+              html, body { width: 80mm; }
+              @page { margin: 0; size: 80mm auto; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>*** COZINHA ***</h2>
+          <h3>PEDIDO #${String(order.order_number).padStart(4, '0')}</h3>
+          <div class="tipo">[ ${typeStr} ]</div>
+          <hr />
+          ${itemsStr}
+          <hr />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
+  }
+
+  // ==========================================
+  // IMPRESSÃO — MOTOBOY (delivery apenas)
+  // Informações completas de entrega
+  // ==========================================
+  function printMotoboyTicket(order) {
+    const printWindow = window.open('', '_blank', 'width=320,height=400');
+    let itemsStr = '';
+    const orderItems = order.items || order.order_items || [];
+    orderItems.forEach(i => {
+      itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong> — ${window.formatCurrency(i.subtotal)}</div>`;
+      if (i.combo_choices && i.combo_choices.length > 0) {
+        itemsStr += `<div class="item-detail"><strong>${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
+      }
+      if (i.optionals && i.optionals.length > 0) {
+        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
+      }
+      if (i.notes) {
+        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
+      }
+    });
+
+    const addr = order.delivery_address;
+    const addrStr = addr
+      ? `${window.escapeHtml(addr.street || '')}, ${window.escapeHtml(String(addr.number || ''))} — ${window.escapeHtml(addr.neighborhood || '')}${addr.complement ? ` (${window.escapeHtml(addr.complement)})` : ''}`
+      : 'Endereço não informado';
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Motoboy #${order.order_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
+            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+            .info { font-size: 13px; margin: 2px 0; }
+            .info-big { font-size: 15px; font-weight: bold; margin: 3px 0; }
+            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
+            .item-detail { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
+            .total-line { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            @media print {
+              html, body { width: 80mm; }
+              @page { margin: 0; size: 80mm auto; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>🛵 MOTOBOY</h2>
+          <h3>PEDIDO #${String(order.order_number).padStart(4, '0')}</h3>
+          <hr />
+          <div class="info-big">${window.escapeHtml(order.customer_name || 'Cliente')}</div>
+          <div class="info"><strong>Fone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
+          <div class="info"><strong>End.:</strong> ${addrStr}</div>
+          ${order.courier_name ? `<div class="info"><strong>Entregador:</strong> ${window.escapeHtml(order.courier_name)}</div>` : ''}
+          <hr />
+          ${itemsStr}
+          <hr />
+          <div class="info">Subtotal: ${window.formatCurrency(order.subtotal)}</div>
+          <div class="info">Taxa Entrega: ${window.formatCurrency(order.delivery_fee)}</div>
+          <div class="total-line">TOTAL: ${window.formatCurrency(order.total)}</div>
+          <div class="info"><strong>Pgto:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco p/ ${window.formatCurrency(order.change_for)})` : ''}</div>
+          ${order.notes ? `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
+  }
+
+  // ==========================================
+  // IMPRESSÃO — CUPOM COMPLETO (legado, mantido para compatibilidade)
   // ==========================================
   function renderProducts() {
     let list = adminState.products;
