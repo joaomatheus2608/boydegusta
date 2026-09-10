@@ -1152,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const activeOrders = getActiveTableOrders(tableNum);
     if (activeOrders.length === 0) return;
 
-    const printWin = window.open('', '_blank', 'width=400,height=600');
+    const printWin = window.open('', '_blank', 'width=320,height=400');
     let itemsRowsStr = '';
     let total = 0;
 
@@ -1160,9 +1160,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const orderItems = o.items || o.order_items || [];
       orderItems.forEach(it => {
         total += Number(it.subtotal) || 0;
-        itemsRowsStr += `<div>${it.quantity}x ${window.escapeHtml(it.name || it.product_name)} - ${window.formatCurrency(it.subtotal)}</div>`;
+        itemsRowsStr += `<div class="item-line">${it.quantity}x <strong>${window.escapeHtml(it.name || it.product_name)}</strong> - ${window.formatCurrency(it.subtotal)}</div>`;
         if (it.optionals && it.optionals.length > 0) {
-          itemsRowsStr += `<div style="font-size: 11px; padding-left: 8px;">+ ${it.optionals.map(op => window.escapeHtml(op.name)).join(', ')}</div>`;
+          itemsRowsStr += `<div class="item-detail"><strong>+ ${it.optionals.map(op => window.escapeHtml(op.name)).join(', ')}</strong></div>`;
+        }
+        if (it.notes) {
+          itemsRowsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(it.notes)} ***</strong></div>`;
         }
       });
     });
@@ -1172,26 +1175,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         <head>
           <title>Prévia da Conta - Mesa ${tableNum}</title>
           <style>
-            body { font-family: monospace; font-size: 13px; padding: 12px; }
-            h2, h3 { margin: 4px 0; text-align: center; }
-            hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
+            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+            .data { text-align: center; font-size: 12px; margin: 2px 0; }
+            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
+            .total-line { font-size: 16px; font-weight: bold; text-align: right; margin-top: 4px; }
+            .obrigado { text-align: center; font-size: 12px; margin-top: 5px; }
+            @media print {
+              html, body { width: 80mm; }
+              @page { margin: 0; size: 80mm auto; }
+            }
           </style>
         </head>
         <body>
           <h2>BOYDEGUSTA</h2>
-          <h3>PRÉVIA DE CONTA — MESA 0${tableNum}</h3>
-          <div>${new Date().toLocaleString('pt-BR')}</div>
+          <h3>CONTA — MESA 0${tableNum}</h3>
+          <div class="data">${new Date().toLocaleString('pt-BR')}</div>
           <hr />
           ${itemsRowsStr}
           <hr />
-          <div style="font-size: 16px; font-weight: bold; text-align: right;">TOTAL: ${window.formatCurrency(total)}</div>
-          <div style="text-align: center; margin-top: 16px; font-size: 11px;">Obrigado pela preferência!</div>
+          <div class="total-line">TOTAL: ${window.formatCurrency(total)}</div>
+          <div class="obrigado">Obrigado pela preferência!</div>
         </body>
       </html>
     `);
     printWin.document.close();
     printWin.focus();
-    printWin.print();
+    setTimeout(() => { printWin.print(); printWin.close(); }, 300);
   });
 
   dom.btnTableCloseBill.addEventListener('click', async () => {
@@ -1530,19 +1545,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function printOrderTicket(order) {
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    const printWindow = window.open('', '_blank', 'width=320,height=400');
     let itemsStr = '';
     const orderItems = order.items || order.order_items || [];
     orderItems.forEach(i => {
-      itemsStr += `<div>${i.quantity}x ${window.escapeHtml(i.name || i.product_name)} - ${window.formatCurrency(i.subtotal)}</div>`;
+      itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong> - ${window.formatCurrency(i.subtotal)}</div>`;
       if (i.combo_choices && i.combo_choices.length > 0) {
-        itemsStr += `<div style="font-size: 11px; padding-left: 10px;">${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</div>`;
+        itemsStr += `<div class="item-detail"><strong>${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
       }
       if (i.optionals && i.optionals.length > 0) {
-        itemsStr += `<div style="font-size: 11px; padding-left: 10px;">${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</div>`;
+        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
       }
       if (i.notes) {
-        itemsStr += `<div style="font-size: 11px; padding-left: 10px; font-weight: bold;">Obs: ${window.escapeHtml(i.notes)}</div>`;
+        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
       }
     });
 
@@ -1560,35 +1575,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         <head>
           <title>Cupom Pedido #${order.order_number}</title>
           <style>
-            body { font-family: monospace; font-size: 13px; padding: 10px; color: #000; }
-            h2, h3 { margin: 4px 0; text-align: center; }
-            hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
+            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+            .tipo { text-align: center; font-weight: bold; font-size: 16px; margin: 3px 0; }
+            .data { text-align: center; font-size: 12px; margin: 2px 0; }
+            .entregador { text-align: center; font-weight: bold; margin: 3px 0; padding: 2px; background: #eee; }
+            .info { font-size: 13px; margin: 2px 0; }
+            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
+            .total-line { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            @media print {
+              html, body { width: 80mm; }
+              @page { margin: 0; size: 80mm auto; }
+            }
           </style>
         </head>
         <body>
           <h2>BOYDEGUSTA</h2>
           <h3>PEDIDO #${String(order.order_number).padStart(4, '0')}</h3>
-          <div style="text-align: center; font-weight: bold; font-size: 15px; margin: 4px 0;">[ ${typeStr} ]</div>
-          <div style="text-align: center;">${new Date(order.created_at).toLocaleString('pt-BR')}</div>
-          ${order.courier_name ? `<div style="text-align: center; font-weight: bold; margin-top: 4px; background: #eee; padding: 2px;">🛵 ENTREGADOR: ${window.escapeHtml(order.courier_name.toUpperCase())}</div>` : ''}
+          <div class="tipo">[ ${typeStr} ]</div>
+          <div class="data">${new Date(order.created_at).toLocaleString('pt-BR')}</div>
+          ${order.courier_name ? `<div class="entregador">🛵 ENTREGADOR: ${window.escapeHtml(order.courier_name.toUpperCase())}</div>` : ''}
           <hr />
-          <div><strong>Cliente:</strong> ${window.escapeHtml(order.customer_name || 'Cliente')}</div>
-          <div><strong>Telefone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
-          ${order.delivery_address ? `<div><strong>Endereço:</strong> ${window.escapeHtml(order.delivery_address.street || '')}, ${window.escapeHtml(String(order.delivery_address.number || ''))} - ${window.escapeHtml(order.delivery_address.neighborhood || '')}</div>` : ''}
-          <div><strong>Pagamento:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco: ${window.formatCurrency(order.change_for)})` : ''}</div>
-          ${order.notes ? `<div><strong>Obs Geral:</strong> ${window.escapeHtml(order.notes)}</div>` : ''}
+          <div class="info"><strong>Cliente:</strong> ${window.escapeHtml(order.customer_name || 'Cliente')}</div>
+          <div class="info"><strong>Fone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
+          ${order.delivery_address ? `<div class="info"><strong>End.:</strong> ${window.escapeHtml(order.delivery_address.street || '')}, ${window.escapeHtml(String(order.delivery_address.number || ''))} - ${window.escapeHtml(order.delivery_address.neighborhood || '')}</div>` : ''}
+          <div class="info"><strong>Pgto:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco: ${window.formatCurrency(order.change_for)})` : ''}</div>
+          ${order.notes ? `<div class="info"><strong>*** OBS GERAL: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
           <hr />
           ${itemsStr}
           <hr />
-          <div>Subtotal: ${window.formatCurrency(order.subtotal)}</div>
-          <div>Taxa Entrega: ${window.formatCurrency(order.delivery_fee)}</div>
-          <div style="font-size: 16px; font-weight: bold;">TOTAL: ${window.formatCurrency(order.total)}</div>
+          <div class="info">Subtotal: ${window.formatCurrency(order.subtotal)}</div>
+          <div class="info">Taxa Entrega: ${window.formatCurrency(order.delivery_fee)}</div>
+          <div class="total-line">TOTAL: ${window.formatCurrency(order.total)}</div>
         </body>
       </html>
     `);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
   }
 
   // ==========================================
