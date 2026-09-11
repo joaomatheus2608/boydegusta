@@ -85,7 +85,7 @@ const INITIAL_PRODUCTS = [
   {
     id: 'prod-promo-1',
     category_id: 'cat-promo',
-    name: 'Combo 3 Hambúrgueres por 40,00',
+    name: 'Combo 3 Hambúrgueres',
     description: 'Escolha 3 burguers por apenas R$ 40,00. Opções: Burguer Calabresa e Coalho, Burguer Cheddar e Bacon, Burguer Creme Cheese.',
     price: 40.00,
     image_url: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80',
@@ -101,6 +101,9 @@ const INITIAL_PRODUCTS = [
     name: 'Promoção 2 Beirutes',
     description: 'Escolha 2 beirutes (R$ 40,00 na Segunda-feira • R$ 50,00 nos demais dias). Opções: 1 Beirute Maminha, 1 Beirute Sol, 1 Beirute Camarão 3 Queijos.',
     price: 50.00,
+    promo_price: 40.00,
+    promo_days: [1],
+    promo_label: 'R$ 40 na Seg',
     monday_price: 40.00,
     image_url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80',
     is_promo: true,

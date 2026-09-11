@@ -312,31 +312,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getProductEffectivePrice(product) {
     if (!product) return 0;
+    const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+    const regularPrice = product.price !== null && product.price !== undefined ? Number(product.price) : 0;
 
-    // Se é uma promoção, usa o cálculo dinâmico
-    if (product.is_promo) {
-      return getPromoEffectivePrice(product);
+    // Promoção por dia da semana configurada no produto
+    const promoDays = Array.isArray(product.promo_days) ? product.promo_days.map(Number) : (product.monday_price ? [1] : []);
+    const promoPrice = Number(product.promo_price) || Number(product.monday_price) || 0;
+
+    if (promoPrice > 0 && promoDays.length > 0 && (product.is_promo !== false)) {
+      const isPromoDay = promoDays.includes(todayDay);
+      if (isPromoDay) {
+        return promoPrice;
+      }
+      return regularPrice > 0 ? regularPrice : promoPrice;
     }
 
-    // Verifica se o produto tem promo_id linkado
+    // Se é uma promoção legada linkada
     if (product.promo_id) {
       const matchedPromo = (state.promotions || []).find(p => p.id === product.promo_id);
       if (matchedPromo) return getPromoEffectivePrice(matchedPromo);
     }
 
-    return product.price !== null && product.price !== undefined ? Number(product.price) : 0;
+    return regularPrice;
   }
 
   function getPromoEffectivePrice(promo) {
     if (!promo) return 0;
     const promoPrice = Number(promo.price) || 0;
     const regularPrice = Number(promo.regular_price) || 0;
-    const activeDays = Array.isArray(promo.active_days) ? promo.active_days : [];
+    const activeDays = Array.isArray(promo.active_days) ? promo.active_days.map(Number) : [];
 
     // Se tem preço regular e dias promocionais definidos
     if (regularPrice > 0 && activeDays.length > 0) {
       const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
-      const isPromoDay = activeDays.includes(todayDay) || activeDays.includes(String(todayDay));
+      const isPromoDay = activeDays.includes(todayDay);
       return isPromoDay ? promoPrice : regularPrice;
     }
 
@@ -440,6 +449,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!dom.menuSectionsContainer) return;
 
     const query = state.searchQuery.toLowerCase().trim();
+    const todayDay = new Date().getDay();
+    const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const DAY_NAMES_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
     let html = '';
     let totalMatchingProducts = 0;
 
@@ -471,18 +484,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         categoryProducts.forEach(prod => {
           const isUnavailable = prod.is_available === false;
-          const isPromo2 = (prod.name || '').toLowerCase().includes('2 beirute') || (prod.promo_id === 'promo-2') || (prod.id === 'promo-2') || (prod.id === 'prod-promo-2');
-          const isMonday = new Date().getDay() === 1;
-          const effectivePrice = getProductEffectivePrice(prod);
-          const formattedPrice = prod.price !== null && prod.price !== undefined
-            ? window.formatCurrency(effectivePrice)
-            : 'Preço a definir';
+          const promoDays = Array.isArray(prod.promo_days) ? prod.promo_days.map(Number) : (prod.monday_price ? [1] : []);
+          const promoPrice = Number(prod.promo_price) || Number(prod.monday_price) || 0;
+          const hasDayPromo = promoPrice > 0 && promoDays.length > 0 && (prod.is_promo !== false);
+          const isPromoToday = hasDayPromo && promoDays.includes(todayDay);
 
-          let promoBadgeHtml = prod.is_promo ? '<span class="badge-tag-promo">PROMO</span>' : '';
-          if (isPromo2) {
-            promoBadgeHtml = isMonday
-              ? '<span class="badge-tag-promo" style="background:#16a34a">PROMO SEGUNDA • R$ 40</span>'
-              : '<span class="badge-tag-promo" style="background:#d97706">2 BEIRUTES • R$ 50 (R$ 40 na Seg)</span>';
+          const regularPrice = Number(prod.price) || 0;
+          const effectivePrice = getProductEffectivePrice(prod);
+
+          let priceDisplayHtml = '';
+          let promoBadgeHtml = '';
+
+          if (isPromoToday) {
+            priceDisplayHtml = `
+              <div style="display: flex; flex-direction: column;">
+                ${regularPrice > 0 && regularPrice !== effectivePrice ? `<s style="font-size: 0.75rem; color: var(--text-muted); line-height: 1;">${window.formatCurrency(regularPrice)}</s>` : ''}
+                <span class="food-card-price-val" style="color: #22c55e; font-weight: 900;">${window.formatCurrency(effectivePrice)}</span>
+              </div>
+            `;
+            const dayLabel = DAY_NAMES_FULL[todayDay].toUpperCase();
+            promoBadgeHtml = `<span class="badge-tag-promo" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">🔥 PROMO HOJE (${dayLabel})</span>`;
+          } else if (hasDayPromo) {
+            priceDisplayHtml = `<span class="food-card-price-val">${window.formatCurrency(regularPrice || effectivePrice)}</span>`;
+            const daysText = promoDays.map(d => DAY_NAMES[d] || d).join(', ');
+            promoBadgeHtml = `<span class="badge-tag-promo" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);">📅 ${window.formatCurrency(promoPrice)} na ${daysText}</span>`;
+          } else {
+            const formattedPrice = prod.price !== null && prod.price !== undefined
+              ? window.formatCurrency(effectivePrice)
+              : 'Preço a definir';
+            priceDisplayHtml = `<span class="food-card-price-val ${prod.price === null ? 'unpriced-notice' : ''}">${formattedPrice}</span>`;
+            if (prod.is_promo) {
+              promoBadgeHtml = '<span class="badge-tag-promo">PROMO</span>';
+            }
           }
 
           html += `
@@ -497,7 +530,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <p class="food-card-description">${prod.description || ''}</p>
                 </div>
                 <div class="food-card-bottom">
-                  <span class="food-card-price-val ${prod.price === null ? 'unpriced-notice' : ''}">${formattedPrice}</span>
+                  ${priceDisplayHtml}
                   <button class="btn-card-add" ${isUnavailable ? 'disabled' : ''}>
                     ${isUnavailable ? 'Esgotado' : '+ Adicionar'}
                   </button>

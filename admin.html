@@ -77,7 +77,6 @@
         <button class="admin-tab-btn" data-tab="orders"><i class="fi fi-sr-motorcycle"></i> Pedidos em Tempo Real</button>
         <button class="admin-tab-btn" data-tab="products"><i class="fi fi-sr-hamburger"></i> Produtos</button>
         <button class="admin-tab-btn" data-tab="categories"><i class="fi fi-sr-folder"></i> Categorias</button>
-        <button class="admin-tab-btn" data-tab="promotions"><i class="fi fi-sr-flame"></i> Promoções & Combos</button>
         <button class="admin-tab-btn" data-tab="optionals"><i class="fi fi-sr-box"></i> Adicionais</button>
         <button class="admin-tab-btn" data-tab="neighborhoods"><i class="fi fi-sr-marker"></i> Bairros & Taxas</button>
         <button class="admin-tab-btn" data-tab="cash-closing"><i class="fi fi-sr-dollar"></i> Caixa & Entregadores</button>
@@ -257,10 +256,18 @@
       <section id="tab-products" class="admin-tab-content" style="display: none;">
         <div class="admin-card-container">
           <div class="admin-card-header">
-            <h3>Catálogo de Produtos</h3>
-            <button id="btnOpenAddProduct" class="btn-submit-order" style="width: auto; padding: 8px 16px;">
-              + Novo Produto
-            </button>
+            <div>
+              <h3 style="margin-bottom: 2px;">Catálogo de Produtos</h3>
+              <span style="font-size: 0.82rem; color: #64748b;">Gerencie preços, fotos, disponibilidade e promoções por dia da semana</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="btnOpenDayPromoModal" class="btn-submit-order" style="width: auto; padding: 8px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="fi fi-sr-flame"></i> + Promoção por Dia
+              </button>
+              <button id="btnOpenAddProduct" class="btn-submit-order" style="width: auto; padding: 8px 16px;">
+                + Novo Produto
+              </button>
+            </div>
           </div>
 
           <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
@@ -278,7 +285,8 @@
                   <th>Foto</th>
                   <th>Nome</th>
                   <th>Categoria</th>
-                  <th>Preço</th>
+                  <th>Preço Padrão</th>
+                  <th>Promoção por Dia</th>
                   <th>Status</th>
                   <th>Disponível</th>
                   <th>Ações</th>
@@ -319,26 +327,6 @@
                 <!-- Renderizado via JS -->
               </tbody>
             </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================================
-           5. PROMOÇÕES & COMBOS
-           ======================================== -->
-      <section id="tab-promotions" class="admin-tab-content" style="display: none;">
-        <div class="admin-card-container">
-          <div class="admin-card-header">
-            <div>
-              <h3 style="margin-bottom: 2px;"><i class="fi fi-sr-flame"></i> Promoções & Combos do Cardápio</h3>
-              <span style="font-size: 0.82rem; color: #64748b;">Configure promoções automáticas por dia da semana e combos oficiais</span>
-            </div>
-            <button id="btnOpenAddPromotion" class="btn-submit-order" style="width: auto; padding: 8px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-              + Nova Promoção
-            </button>
-          </div>
-          <div id="adminPromotionsList">
-            <!-- Renderizado via JS -->
           </div>
         </div>
       </section>
@@ -940,6 +928,55 @@
             </div>
           </div>
 
+          <!-- Promoção por Dia da Semana no Produto -->
+          <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 14px; margin-top: 14px; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <label style="font-weight: 800; font-size: 0.9rem; color: #92400e; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="editProdHasDayPromo" />
+                <span>🔥 Promoção por Dia da Semana</span>
+              </label>
+            </div>
+            <div id="editProdDayPromoFields" style="display: none;">
+              <div class="form-cols-2">
+                <div class="form-field-group">
+                  <label class="form-field-label">Preço Promocional (R$) *</label>
+                  <input type="number" step="0.50" id="editProdPromoPrice" class="form-text-input" placeholder="Ex: 40.00" />
+                </div>
+                <div class="form-field-group">
+                  <label class="form-field-label">Rótulo / Badge (Opcional)</label>
+                  <input type="text" id="editProdPromoLabel" class="form-text-input" placeholder="Ex: R$ 40 na Seg" />
+                </div>
+              </div>
+              <div class="form-field-group" style="margin-bottom: 0;">
+                <label class="form-field-label">Dias com Preço Promocional Ativo:</label>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="editProdPromoDaysContainer">
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="1" /> Seg
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="2" /> Ter
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="3" /> Qua
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="4" /> Qui
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="5" /> Sex
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="6" /> Sáb
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; border: 1px solid #fde68a;">
+                    <input type="checkbox" name="editProdPromoDay" value="0" /> Dom
+                  </label>
+                </div>
+                <span style="font-size: 0.73rem; color: #92400e; margin-top: 4px; display: block;">No dia configurado, o preço muda automaticamente no cardápio e no PDV.</span>
+              </div>
+            </div>
+          </div>
+
           <div style="display: flex; gap: 10px; margin-top: 18px;">
             <button type="submit" class="btn-submit-order" style="flex: 1;">Salvar Produto</button>
             <button type="button" id="btnProductEditCancel" class="btn-ghost-secondary">Cancelar</button>
@@ -1042,91 +1079,87 @@
   </div>
 
   <!-- ==========================================
-       MODAL DE EDITAR / CRIAR PROMOÇÃO & COMBOS
+       MODAL DE CONFIGURAÇÃO DE PROMOÇÃO POR DIA DA SEMANA
        ========================================== -->
-  <div id="promotionEditModal" class="modal-backdrop" style="display: none; z-index: 1100;">
-    <div class="modal-window" style="max-width: 520px;">
+  <div id="dayPromoModal" class="modal-backdrop" style="display: none; z-index: 1100;">
+    <div class="modal-window" style="max-width: 500px;">
       <div class="modal-header-bar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-        <h3 id="promotionModalTitle" style="margin: 0; color: #fff;">Editar Promoção</h3>
-        <button id="btnPromotionModalClose" class="btn-close-modal" style="color: #fff; background: rgba(255,255,255,0.2);">✕</button>
+        <h3 id="dayPromoModalTitle" style="margin: 0; color: #fff;"><i class="fi fi-sr-flame"></i> Promoção por Dia da Semana</h3>
+        <button id="btnDayPromoModalClose" class="btn-close-modal" style="color: #fff; background: rgba(255,255,255,0.2);">✕</button>
       </div>
       <div class="modal-scroll-body">
-        <form id="promotionEditForm">
-          <input type="hidden" id="editPromoId" />
+        <form id="dayPromoForm">
+          <input type="hidden" id="dayPromoProdId" />
+
           <div class="form-field-group">
-            <label class="form-field-label">Nome da Promoção / Combo *</label>
-            <input type="text" id="editPromoName" class="form-text-input" placeholder="Ex: Promoção 2 Beirutes" required />
+            <label class="form-field-label">Produto *</label>
+            <select id="dayPromoProdSelect" class="form-text-input" required>
+              <!-- Preenchido dinamicamente via JS com produtos -->
+            </select>
           </div>
+
           <div class="form-cols-2">
             <div class="form-field-group">
-              <label class="form-field-label">Preço Promocional (R$) *</label>
-              <input type="number" step="0.50" id="editPromoPrice" class="form-text-input" placeholder="Ex: 40.00" required />
+              <label class="form-field-label">Preço Normal (R$) *</label>
+              <input type="number" step="0.50" id="dayPromoRegularPrice" class="form-text-input" placeholder="Ex: 50.00" required />
             </div>
             <div class="form-field-group">
-              <label class="form-field-label">Preço Normal / Outros Dias (R$)</label>
-              <input type="number" step="0.50" id="editPromoRegularPrice" class="form-text-input" placeholder="Ex: 50.00" />
+              <label class="form-field-label">Preço Promocional (R$) *</label>
+              <input type="number" step="0.50" id="dayPromoPrice" class="form-text-input" placeholder="Ex: 40.00" required />
             </div>
           </div>
 
           <!-- Dias da semana com promoção ativa -->
           <div class="form-field-group">
-            <label class="form-field-label">Dias com Preço Promocional Ativo</label>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;" id="promoDaysOfWeekContainer">
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="1" /> Seg
+            <label class="form-field-label">Dias da Semana com Promoção Ativa *</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;" id="dayPromoWeekdaysContainer">
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="1" /> Seg
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="2" /> Ter
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="2" /> Ter
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="3" /> Qua
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="3" /> Qua
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="4" /> Qui
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="4" /> Qui
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="5" /> Sex
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="5" /> Sex
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="6" /> Sáb
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="6" /> Sáb
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <input type="checkbox" name="promoDay" value="0" /> Dom
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; background: #f1f5f9; padding: 7px 11px; border-radius: 6px; cursor: pointer; font-weight: 700; border: 1px solid #cbd5e1;">
+                <input type="checkbox" name="dayPromoDayCheckbox" value="0" /> Dom
               </label>
             </div>
-            <span style="font-size: 0.74rem; color: #64748b; margin-top: 4px; display: block;">Se nenhum dia for marcado, o preço promocional vale todos os dias.</span>
+            <span style="font-size: 0.74rem; color: #64748b; margin-top: 5px; display: block;">No dia marcado, o sistema aplica o preço promocional automaticamente no cardápio e no PDV.</span>
           </div>
 
           <div class="form-cols-2">
             <div class="form-field-group">
-              <label class="form-field-label">Qtd de Itens no Combo</label>
-              <input type="number" min="1" max="10" id="editPromoQty" class="form-text-input" placeholder="Ex: 2 ou 3" />
+              <label class="form-field-label">Rótulo / Badge (Opcional)</label>
+              <input type="text" id="dayPromoLabel" class="form-text-input" placeholder="Ex: PROMO DE SEGUNDA" />
             </div>
             <div class="form-field-group">
-              <label class="form-field-label">Status</label>
-              <select id="editPromoActive" class="form-text-input">
-                <option value="true">Ativa (Visível)</option>
-                <option value="false">Inativa (Oculta)</option>
+              <label class="form-field-label">Status da Promoção</label>
+              <select id="dayPromoActive" class="form-text-input">
+                <option value="true">Ativa (Aplicar nos dias)</option>
+                <option value="false">Inativa (Desativada)</option>
               </select>
             </div>
           </div>
 
-          <div class="form-field-group">
-            <label class="form-field-label">Itens Escolhíveis do Combo (1 por linha ou separados por vírgula)</label>
-            <textarea id="editPromoAllowedItems" class="notes-input-box" style="height: 60px;" placeholder="Ex:&#10;1 Beirute Maminha&#10;1 Beirute Sol&#10;1 Beirute Camarão 3 Queijos"></textarea>
-          </div>
-
-          <div class="form-field-group">
-            <label class="form-field-label">Descrição da Promoção</label>
-            <textarea id="editPromoDescription" class="notes-input-box" style="height: 50px;" placeholder="Descrição exibida no cardápio"></textarea>
-          </div>
-
           <div style="display: flex; gap: 10px; margin-top: 18px;">
-            <button type="submit" class="btn-submit-order" style="flex: 1;">Salvar Promoção</button>
-            <button type="button" id="btnDeletePromo" class="btn-ghost-secondary" style="color: var(--primary-red); display: none;">
-              <i class="fi fi-sr-trash"></i> Excluir
+            <button type="submit" class="btn-submit-order" style="flex: 1; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+              <i class="fi fi-sr-disk"></i> Salvar Promoção
             </button>
-            <button type="button" id="btnPromotionModalCancel" class="btn-ghost-secondary">Cancelar</button>
+            <button type="button" id="btnRemoveDayPromo" class="btn-ghost-secondary" style="color: var(--primary-red); display: none;">
+              <i class="fi fi-sr-trash"></i> Remover Promoção
+            </button>
+            <button type="button" id="btnDayPromoModalCancel" class="btn-ghost-secondary">Cancelar</button>
           </div>
         </form>
       </div>
