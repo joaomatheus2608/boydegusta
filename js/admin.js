@@ -172,6 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     editPromoId: document.getElementById('editPromoId'),
     editPromoName: document.getElementById('editPromoName'),
     editPromoPrice: document.getElementById('editPromoPrice'),
+    editPromoRegularPrice: document.getElementById('editPromoRegularPrice'),
+    editPromoQty: document.getElementById('editPromoQty'),
+    editPromoActive: document.getElementById('editPromoActive'),
+    editPromoAllowedItems: document.getElementById('editPromoAllowedItems'),
     editPromoDescription: document.getElementById('editPromoDescription'),
 
     btnOpenAddOptional: document.getElementById('btnOpenAddOptional'),
@@ -631,13 +635,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getProductEffectivePrice(product) {
     if (!product) return 0;
-    const name = (product.name || '').toLowerCase();
-    const isPromo2Beirutes = name.includes('2 beirute') || (product.promo_id === 'promo-2') || (product.id === 'promo-2') || (product.id === 'prod-promo-2');
-    if (isPromo2Beirutes) {
-      const isMonday = new Date().getDay() === 1; // 1 = Segunda-feira
-      return isMonday ? 40.00 : 50.00;
+
+    // Se o produto tem promo_id, busca a promoção para calcular preço
+    const promoId = product.promo_id || product.id;
+    const matchedPromo = (adminState.promotions || []).find(p => p.id === promoId);
+    if (matchedPromo) {
+      return getPromoEffectivePrice(matchedPromo);
     }
+
+    // Se é uma promoção direta
+    if (product.is_promo) {
+      return getPromoEffectivePrice(product);
+    }
+
     return product.price !== null && product.price !== undefined ? Number(product.price) : 0;
+  }
+
+  function getPromoEffectivePrice(promo) {
+    if (!promo) return 0;
+    const promoPrice = Number(promo.price) || 0;
+    const regularPrice = Number(promo.regular_price) || 0;
+    const activeDays = Array.isArray(promo.active_days) ? promo.active_days : [];
+
+    // Se tem preço regular e dias ativos definidos
+    if (regularPrice > 0 && activeDays.length > 0) {
+      const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
+      const isPromoDay = activeDays.includes(todayDay) || activeDays.includes(String(todayDay));
+      return isPromoDay ? promoPrice : regularPrice;
+    }
+
+    return promoPrice;
   }
 
   function renderPosCatalog() {
@@ -763,6 +790,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function openPosItemCustomModal(product) {
     const isPromo = Boolean(product.is_promo);
     const basePrice = getProductEffectivePrice(product);
+    const isBurger = !isPromo && (isProductNaBrasa(product) || isProductNaChapa(product));
 
     adminState.posCustomItemState = {
       product,
@@ -771,7 +799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       qty: 1,
       selectedOptionals: [],
       comboChoices: {},
-      notes: ''
+      notes: '',
+      burgerVersion: 'tradicional'
     };
 
     dom.posCustomItemTitle.textContent = `${isPromo ? '🔥 ' : ''}${product.name}`;
@@ -779,6 +808,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.posCustomItemBasePrice.textContent = window.formatCurrency(basePrice);
     dom.posCustomItemNotes.value = '';
     dom.posCustomItemQty.textContent = '1';
+
+    // Seção versão hambúrguer
+    const burgerSizeSection = document.getElementById('posCustomBurgerSizeSection');
+    if (burgerSizeSection) {
+      if (isBurger) {
+        burgerSizeSection.style.display = 'block';
+        // Reset para tradicional
+        const radios = burgerSizeSection.querySelectorAll('input[name="posBurgerSize"]');
+        radios.forEach(r => { r.checked = r.value === 'tradicional'; });
+        radios.forEach(r => {
+          r.onchange = () => {
+            adminState.posCustomItemState.burgerVersion = r.value;
+            adminState.posCustomItemState.basePrice = basePrice + (r.value === 'duplo' ? 5 : 0);
+            updateCustomSubtotal();
+          };
+        });
+      } else {
+        burgerSizeSection.style.display = 'none';
+      }
+    }
 
     if (isPromo && product.allowed_items && product.allowed_items.length > 0) {
       dom.posCustomComboSection.style.display = 'block';
@@ -829,29 +878,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     let optHtml = '';
     const isBrasa = isProductNaBrasa(product);
     const isChapa = isProductNaChapa(product);
+    const productCategoryId = product.category_id || '';
 
     const activeOptionals = (adminState.optionals || []).filter(opt => {
       if (opt.is_active === false) return false;
       const optName = (opt.name || '').toLowerCase();
       const target = (opt.target || '').toLowerCase();
 
-      const isOptBrasa = target === 'brasa' || optName.includes('brasa');
-      const isOptChapa = target === 'chapa' || optName.includes('chapa');
-
-      // Se o hambúrguer for na Brasa, só mostra Adicional Carne Brasa + gerais (oculta Chapa)
-      if (isBrasa) {
-        if (isOptChapa) return false;
+      // Verificação por categoria específica (applicable_category_ids)
+      if (target === 'custom' && Array.isArray(opt.applicable_category_ids) && opt.applicable_category_ids.length > 0) {
+        if (!opt.applicable_category_ids.includes(productCategoryId)) return false;
+      } else if (target === 'all_categories') {
+        // Exibe para todas as categorias, sem filtro de brasa/chapa
         return true;
+      } else {
+        const isOptBrasa = target === 'brasa' || optName.includes('brasa');
+        const isOptChapa = target === 'chapa' || optName.includes('chapa');
+
+        if (isBrasa) {
+          if (isOptChapa) return false;
+        } else if (isChapa) {
+          if (isOptBrasa) return false;
+        } else {
+          // Para outros itens (não burguer), oculta adicionais de carne
+          if (isOptBrasa || isOptChapa) return false;
+        }
       }
 
-      // Se o hambúrguer for na Chapa, só mostra Adicional Carne Chapa + gerais (oculta Brasa)
-      if (isChapa) {
-        if (isOptBrasa) return false;
-        return true;
-      }
-
-      // Outros itens
-      if (isOptBrasa || isOptChapa) return false;
       return true;
     });
 
@@ -931,7 +984,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   dom.btnConfirmCustomItem.addEventListener('click', () => {
     if (!adminState.posCustomItemState) return;
 
-    const { product, isPromo, basePrice, qty, selectedOptionals } = adminState.posCustomItemState;
+    const { product, isPromo, basePrice, qty, selectedOptionals, burgerVersion } = adminState.posCustomItemState;
     const notes = dom.posCustomItemNotes.value.trim();
 
     let comboChoicesList = [];
@@ -951,16 +1004,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const extraPrice = selectedOptionals.reduce((sum, o) => sum + o.price, 0);
     const unitPrice = basePrice + extraPrice;
 
+    // Nome com versão do hambúrguer
+    const isBurger = !isPromo && (isProductNaBrasa(product) || isProductNaChapa(product));
+    const versionLabel = isBurger && burgerVersion === 'duplo' ? ' (Duplo)' : '';
+
     addItemToPosCart({
       id: product.id,
-      name: product.name,
+      name: product.name + versionLabel,
       price: unitPrice,
       quantity: qty,
       subtotal: unitPrice * qty,
       optionals: selectedOptionals,
       notes: notes,
       is_combo: isPromo,
-      combo_choices: comboChoicesList
+      combo_choices: comboChoicesList,
+      burger_version: isBurger ? (burgerVersion || 'tradicional') : null
     });
 
     dom.posItemCustomModal.style.display = 'none';
@@ -2289,18 +2347,61 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const todayDay = new Date().getDay();
+
     let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">';
     adminState.promotions.forEach(p => {
+      const activeDays = Array.isArray(p.active_days) ? p.active_days.map(Number) : [];
+      const regularPrice = Number(p.regular_price) || 0;
+      const isPromoDay = activeDays.length > 0 && (activeDays.includes(todayDay));
+      const effectivePrice = getPromoEffectivePrice(p);
+
+      // Badge de dias
+      let daysBadgeHtml = '';
+      if (activeDays.length > 0) {
+        const dayPills = DAY_NAMES.map((d, i) => {
+          const isActive = activeDays.includes(i);
+          const isToday = i === todayDay;
+          return `<span style="display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 0.72rem; font-weight: 700;
+            background: ${isActive ? (isToday ? '#d97706' : '#fef3c7') : '#f1f5f9'};
+            color: ${isActive ? (isToday ? '#fff' : '#92400e') : '#94a3b8'};
+            border: 1px solid ${isActive ? '#fbbf24' : 'transparent'}">${d}</span>`;
+        }).join('');
+        daysBadgeHtml = `
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 0.74rem; color: #64748b; display: block; margin-bottom: 4px;">Dias com preço promocional:</span>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">${dayPills}</div>
+          </div>`;
+      }
+
+      // Preço
+      let priceHtml = '';
+      if (regularPrice > 0 && activeDays.length > 0) {
+        priceHtml = `
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="font-weight: 800; font-size: 1.05rem; color: ${isPromoDay ? '#16a34a' : '#d97706'};">${window.formatCurrency(effectivePrice)}</span>
+            ${isPromoDay
+              ? `<span style="font-size: 0.72rem; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; font-weight: 700;">✓ Hoje é dia de promo!</span>`
+              : `<span style="font-size: 0.72rem; color: #64748b;">Promo (dias ativos): ${window.formatCurrency(p.price)}</span>`}
+          </div>`;
+      } else {
+        priceHtml = `<div style="font-weight: 800; font-size: 1.1rem; color: #d97706; margin-bottom: 4px;">${window.formatCurrency(p.price)}</div>`;
+      }
+
       html += `
         <div class="admin-card-container" style="border: 2px solid var(--border-color); margin-bottom: 0;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <h4 style="font-size: 1.05rem; color: #d97706; margin: 0;"><i class="fi fi-sr-flame" style="color: #f97316;"></i> ${window.escapeHtml(p.name)}</h4>
-            <span style="font-weight: 800; font-size: 1.1rem; color: #d97706;">${window.formatCurrency(p.price)}</span>
+            <span style="font-size: 0.75rem; background: ${p.is_active !== false ? '#dcfce7' : '#fee2e2'}; color: ${p.is_active !== false ? '#166534' : '#991b1b'}; padding: 2px 8px; border-radius: 6px; font-weight: 700;">${p.is_active !== false ? 'Ativa' : 'Inativa'}</span>
           </div>
-          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">${window.escapeHtml(p.description || '')}</p>
+          ${priceHtml}
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 10px;">${window.escapeHtml(p.description || '')}</p>
+          ${daysBadgeHtml}
+          ${p.allowed_items && p.allowed_items.length > 0 ? `
           <div style="font-size: 0.8rem; color: #475569; background: #f8fafc; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px;">
-            <strong>Lanches válidos:</strong> ${p.allowed_items ? window.escapeHtml(p.allowed_items.join(', ')) : 'Todos'}
-          </div>
+            <strong>Itens do combo:</strong> ${window.escapeHtml(p.allowed_items.join(', '))}
+          </div>` : ''}
           <div style="display: flex; justify-content: flex-end;">
             <button class="btn-ghost-secondary btn-edit-promo" data-promo-id="${p.id}" style="font-size: 0.8rem;">
               <i class="fi fi-sr-pencil"></i> Editar Promoção
@@ -2320,7 +2421,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+
   function openPromotionModal(promoId = null) {
+    const dayCheckboxes = document.querySelectorAll('input[name="promoDay"]');
+    const btnDelete = document.getElementById('btnDeletePromo');
+
     if (promoId) {
       const promo = adminState.promotions.find(p => p.id === promoId);
       if (!promo) return;
@@ -2328,13 +2433,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.editPromoId.value = promo.id;
       dom.editPromoName.value = promo.name || '';
       dom.editPromoPrice.value = promo.price !== undefined && promo.price !== null ? promo.price : '';
+      if (dom.editPromoRegularPrice) dom.editPromoRegularPrice.value = promo.regular_price || '';
       dom.editPromoDescription.value = promo.description || '';
+      if (dom.editPromoQty) dom.editPromoQty.value = promo.required_quantity || '';
+      if (dom.editPromoActive) dom.editPromoActive.value = String(promo.is_active !== false);
+      if (dom.editPromoAllowedItems) {
+        dom.editPromoAllowedItems.value = Array.isArray(promo.allowed_items) ? promo.allowed_items.join('\n') : (promo.allowed_items || '');
+      }
+      // Popula dias da semana
+      const activeDays = Array.isArray(promo.active_days) ? promo.active_days.map(String) : [];
+      dayCheckboxes.forEach(cb => { cb.checked = activeDays.includes(cb.value); });
+      if (btnDelete) btnDelete.style.display = 'inline-flex';
     } else {
       dom.promotionModalTitle.textContent = 'Nova Promoção';
       dom.editPromoId.value = '';
       dom.editPromoName.value = '';
       dom.editPromoPrice.value = '';
+      if (dom.editPromoRegularPrice) dom.editPromoRegularPrice.value = '';
       dom.editPromoDescription.value = '';
+      if (dom.editPromoQty) dom.editPromoQty.value = '';
+      if (dom.editPromoActive) dom.editPromoActive.value = 'true';
+      if (dom.editPromoAllowedItems) dom.editPromoAllowedItems.value = '';
+      dayCheckboxes.forEach(cb => { cb.checked = false; });
+      if (btnDelete) btnDelete.style.display = 'none';
     }
     dom.promotionEditModal.style.display = 'flex';
   }
@@ -2342,17 +2463,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (dom.btnPromotionModalClose) dom.btnPromotionModalClose.addEventListener('click', () => dom.promotionEditModal.style.display = 'none');
   if (dom.btnPromotionModalCancel) dom.btnPromotionModalCancel.addEventListener('click', () => dom.promotionEditModal.style.display = 'none');
 
+  const btnDeletePromo = document.getElementById('btnDeletePromo');
+  if (btnDeletePromo) {
+    btnDeletePromo.addEventListener('click', async () => {
+      const id = dom.editPromoId.value;
+      if (!id) return;
+      if (!confirm('Deseja excluir esta promoção?')) return;
+      await window.db.deletePromotion(id);
+      adminState.promotions = adminState.promotions.filter(p => p.id !== id);
+      dom.promotionEditModal.style.display = 'none';
+      renderPromotions();
+    });
+  }
+
   if (dom.promotionEditForm) {
     dom.promotionEditForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = dom.editPromoId.value;
       const name = dom.editPromoName.value.trim();
       const price = Number(dom.editPromoPrice.value) || 0;
+      const regular_price = dom.editPromoRegularPrice ? (Number(dom.editPromoRegularPrice.value) || 0) : 0;
       const description = dom.editPromoDescription.value.trim();
+      const required_quantity = dom.editPromoQty ? (Number(dom.editPromoQty.value) || 0) : 0;
+      const is_active = dom.editPromoActive ? dom.editPromoActive.value === 'true' : true;
+      const allowedItemsRaw = dom.editPromoAllowedItems ? dom.editPromoAllowedItems.value : '';
+      const allowed_items = allowedItemsRaw
+        .split(/[\n,]+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      // Coleta dias ativos
+      const dayCheckboxes = document.querySelectorAll('input[name="promoDay"]:checked');
+      const active_days = Array.from(dayCheckboxes).map(cb => Number(cb.value));
 
       if (!name) return;
       const existing = adminState.promotions.find(p => p.id === id) || {};
-      const payload = { ...existing, name, price, description };
+      const payload = { ...existing, name, price, regular_price, description, required_quantity, is_active, allowed_items, active_days };
       if (id) payload.id = id;
 
       const saved = await window.db.savePromotion(payload);
@@ -2426,7 +2572,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function buildOptCategoryCheckboxes(selectedIds) {
+    const container = document.getElementById('optCategoriesCheckboxes');
+    if (!container) return;
+    const selected = Array.isArray(selectedIds) ? selectedIds.map(String) : [];
+    container.innerHTML = adminState.categories.map(cat => `
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.83rem; cursor: pointer;">
+        <input type="checkbox" name="optCatApplicability" value="${cat.id}" ${selected.includes(String(cat.id)) ? 'checked' : ''} style="accent-color: #d97706;" />
+        ${window.escapeHtml(cat.name)}
+      </label>
+    `).join('');
+  }
+
   function openOptionalModal(optId = null) {
+    const catSection = document.getElementById('optCategoriesCheckboxesSection');
+
     if (optId) {
       const opt = adminState.optionals.find(o => o.id === optId);
       if (!opt) return;
@@ -2436,7 +2596,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.editOptPrice.value = opt.price !== undefined && opt.price !== null ? opt.price : '3.00';
       dom.editOptActive.value = String(opt.is_active !== false);
       const optName = (opt.name || '').toLowerCase();
-      dom.editOptTarget.value = opt.target || (optName.includes('brasa') ? 'brasa' : optName.includes('chapa') ? 'chapa' : 'all');
+      const savedTarget = opt.target || (optName.includes('brasa') ? 'brasa' : optName.includes('chapa') ? 'chapa' : 'all');
+      dom.editOptTarget.value = savedTarget;
+      buildOptCategoryCheckboxes(opt.applicable_category_ids || []);
+      if (catSection) catSection.style.display = savedTarget === 'custom' ? 'block' : 'none';
     } else {
       dom.optionalModalTitle.textContent = 'Novo Adicional';
       dom.editOptId.value = '';
@@ -2444,8 +2607,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.editOptPrice.value = '3.00';
       dom.editOptActive.value = 'true';
       dom.editOptTarget.value = 'all';
+      buildOptCategoryCheckboxes([]);
+      if (catSection) catSection.style.display = 'none';
     }
     dom.optionalEditModal.style.display = 'flex';
+  }
+
+  // Mostrar/ocultar checkboxes ao mudar target
+  if (dom.editOptTarget) {
+    dom.editOptTarget.addEventListener('change', () => {
+      const catSection = document.getElementById('optCategoriesCheckboxesSection');
+      if (catSection) catSection.style.display = dom.editOptTarget.value === 'custom' ? 'block' : 'none';
+    });
   }
 
   if (dom.btnOptionalModalClose) dom.btnOptionalModalClose.addEventListener('click', () => dom.optionalEditModal.style.display = 'none');
@@ -2460,8 +2633,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const is_active = dom.editOptActive.value === 'true';
       const target = dom.editOptTarget ? dom.editOptTarget.value : 'all';
 
+      // Coleta categorias selecionadas
+      const checkedCats = Array.from(document.querySelectorAll('input[name="optCatApplicability"]:checked'));
+      const applicable_category_ids = checkedCats.map(cb => cb.value);
+
       if (!name) return;
-      const payload = { name, price, is_active, target };
+      const payload = { name, price, is_active, target, applicable_category_ids };
       if (id) payload.id = id;
 
       const saved = await window.db.saveOptional(payload);

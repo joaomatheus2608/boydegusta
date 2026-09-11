@@ -361,6 +361,17 @@
       return saved;
     },
 
+    async deletePromotion(id) {
+      const list = getStored(STORAGE_KEYS.PROMOTIONS, window.INITIAL_PROMOTIONS);
+      setStored(STORAGE_KEYS.PROMOTIONS, list.filter(p => p.id !== id));
+      try {
+        await api('delete-promotion', 'DELETE', { id });
+      } catch (e) {
+        console.warn('Erro ao excluir promoção via API:', e);
+      }
+      return true;
+    },
+
     // ----------------------------------------
     // 7. PEDIDOS
     // ----------------------------------------

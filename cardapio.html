@@ -182,6 +182,29 @@
           <p id="productModalDesc" style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;"></p>
           <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-yellow); margin-bottom: 16px;" id="productModalPrice">R$ 0,00</div>
 
+          <!-- Seção de Versão / Tamanho do Hambúrguer (Tradicional vs Duplo +R$ 5) -->
+          <div id="productModalBurgerSizeSection" style="display: none; margin-bottom: 16px;">
+            <div class="modal-subhead">
+              Versão do Hambúrguer <span>Escolha 1 opção</span>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+              <label class="size-option-pill active" id="sizeOptTradicional" style="flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 2px solid var(--primary-yellow); cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="radio" name="modalBurgerSize" value="tradicional" checked style="accent-color: var(--primary-yellow);" />
+                  <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Tradicional</span>
+                </div>
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">1 Carne</span>
+              </label>
+              <label class="size-option-pill" id="sizeOptDuplo" style="flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.15); cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="radio" name="modalBurgerSize" value="duplo" style="accent-color: var(--primary-yellow);" />
+                  <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Duplo</span>
+                </div>
+                <span style="font-size: 0.82rem; color: var(--primary-yellow); font-weight: 800;">+ R$ 5,00</span>
+              </label>
+            </div>
+          </div>
+
           <!-- Seção de Adicionais -->
           <div id="productModalOptionalsSection">
             <div class="modal-subhead">

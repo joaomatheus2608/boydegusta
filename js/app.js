@@ -273,11 +273,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   function getFilteredOptionalsForProduct(product) {
     const isBrasa = isProductNaBrasa(product);
     const isChapa = isProductNaChapa(product);
+    const productCategoryId = (product && product.category_id) ? product.category_id : '';
 
     return state.optionals.filter(opt => {
       if (opt.is_active === false) return false;
       const optName = (opt.name || '').toLowerCase();
       const target = (opt.target || '').toLowerCase();
+
+      // Adicional com categorias específicas (Aplicação personalizada)
+      if (target === 'custom' && Array.isArray(opt.applicable_category_ids) && opt.applicable_category_ids.length > 0) {
+        // Só exibe se a categoria do produto estiver na lista
+        return opt.applicable_category_ids.includes(productCategoryId);
+      }
+
+      // Exibe para todas as categorias sem filtro
+      if (target === 'all_categories') return true;
 
       const isOptBrasa = target === 'brasa' || optName.includes('brasa');
       const isOptChapa = target === 'chapa' || optName.includes('chapa');
@@ -294,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return true;
       }
 
-      // Para outros itens, oculta adicionais específicos de carne brasa/chapa
+      // Para outros itens (não burguer), oculta adicionais específicos de carne brasa/chapa
       if (isOptBrasa || isOptChapa) return false;
       return true;
     });
@@ -302,13 +312,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getProductEffectivePrice(product) {
     if (!product) return 0;
-    const name = (product.name || '').toLowerCase();
-    const isPromo2Beirutes = name.includes('2 beirute') || (product.promo_id === 'promo-2') || (product.id === 'promo-2') || (product.id === 'prod-promo-2');
-    if (isPromo2Beirutes) {
-      const isMonday = new Date().getDay() === 1; // 1 = Segunda-feira
-      return isMonday ? 40.00 : 50.00;
+
+    // Se é uma promoção, usa o cálculo dinâmico
+    if (product.is_promo) {
+      return getPromoEffectivePrice(product);
     }
+
+    // Verifica se o produto tem promo_id linkado
+    if (product.promo_id) {
+      const matchedPromo = (state.promotions || []).find(p => p.id === product.promo_id);
+      if (matchedPromo) return getPromoEffectivePrice(matchedPromo);
+    }
+
     return product.price !== null && product.price !== undefined ? Number(product.price) : 0;
+  }
+
+  function getPromoEffectivePrice(promo) {
+    if (!promo) return 0;
+    const promoPrice = Number(promo.price) || 0;
+    const regularPrice = Number(promo.regular_price) || 0;
+    const activeDays = Array.isArray(promo.active_days) ? promo.active_days : [];
+
+    // Se tem preço regular e dias promocionais definidos
+    if (regularPrice > 0 && activeDays.length > 0) {
+      const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
+      const isPromoDay = activeDays.includes(todayDay) || activeDays.includes(String(todayDay));
+      return isPromoDay ? promoPrice : regularPrice;
+    }
+
+    return promoPrice;
   }
 
   // ==========================================
@@ -515,6 +547,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.modalSelectedOptionals = [];
     state.modalNotes = '';
     state.modalComboCounts = {};
+    state.modalBurgerVersion = 'tradicional'; // padrão
 
     dom.productModalTitle.textContent = product.name;
     dom.productModalCover.src = product.image_url || 'boylogo.jpg';
@@ -526,6 +559,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se é uma das 2 Promoções de Combo Oficiais
     const isCombo3Burguers = product.name.toLowerCase().includes('combo 3') || (product.promo_id === 'promo-1');
     const isPromo2Beirutes = product.name.toLowerCase().includes('2 beirute') || (product.promo_id === 'promo-2');
+
+    // Seção de tamanho do hambúrguer (Tradicional vs Duplo)
+    const burgerSizeSection = document.getElementById('productModalBurgerSizeSection');
+    const isBurguer = !isCombo3Burguers && !isPromo2Beirutes &&
+      (isProductNaBrasa(product) || isProductNaChapa(product));
+
+    if (burgerSizeSection) {
+      if (isBurguer) {
+        burgerSizeSection.style.display = 'block';
+        // Reset para tradicional
+        const radios = burgerSizeSection.querySelectorAll('input[name="modalBurgerSize"]');
+        radios.forEach(r => { r.checked = r.value === 'tradicional'; });
+        // Atualiza visual das pills
+        const pillTradicional = document.getElementById('sizeOptTradicional');
+        const pillDuplo = document.getElementById('sizeOptDuplo');
+        if (pillTradicional) { pillTradicional.style.borderColor = 'var(--primary-yellow)'; pillTradicional.style.background = 'rgba(255,255,255,0.06)'; }
+        if (pillDuplo) { pillDuplo.style.borderColor = 'rgba(255,255,255,0.15)'; pillDuplo.style.background = 'rgba(255,255,255,0.04)'; }
+        radios.forEach(r => {
+          r.onchange = () => {
+            state.modalBurgerVersion = r.value;
+            // Atualiza visual das pills
+            if (pillTradicional) { pillTradicional.style.borderColor = r.value === 'tradicional' ? 'var(--primary-yellow)' : 'rgba(255,255,255,0.15)'; }
+            if (pillDuplo) { pillDuplo.style.borderColor = r.value === 'duplo' ? 'var(--primary-yellow)' : 'rgba(255,255,255,0.15)'; }
+            updateModalDynamicPrice();
+          };
+        });
+      } else {
+        burgerSizeSection.style.display = 'none';
+      }
+    }
 
     if (isCombo3Burguers || isPromo2Beirutes) {
       dom.productModalOptionalsSection.style.display = 'none';
@@ -549,9 +612,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       dom.productModalComboSection.style.display = 'none';
 
-      // Adicionais para hambúrgueres (na chapa e na brasa)
-      const isBurguer = isProductNaBrasa(product) || isProductNaChapa(product) || product.category_id === 'cat-burguer' || product.category_id === 'cat-brasa';
-      if (isBurguer) {
+      // Adicionais filtrados por categoria
+      const filteredOptionals = getFilteredOptionalsForProduct(product);
+      if (filteredOptionals.length > 0) {
         dom.productModalOptionalsSection.style.display = 'block';
         renderOptionalsList(product);
       } else {
@@ -670,14 +733,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateModalDynamicPrice() {
     if (!state.currentModalProduct) return;
-    const basePrice = Number(state.currentModalProduct.price) || 0;
+    const basePrice = getProductEffectivePrice(state.currentModalProduct);
+    const burgerExtra = (state.modalBurgerVersion === 'duplo') ? 5 : 0;
     const optsPrice = state.modalSelectedOptionals.reduce((sum, opt) => sum + (Number(opt.price) || 0), 0);
-    const unitTotal = basePrice + optsPrice;
+    const unitTotal = basePrice + burgerExtra + optsPrice;
     const finalTotal = unitTotal * state.modalQty;
 
     const formattedUnit = basePrice > 0 ? window.formatCurrency(unitTotal) : 'A definir no painel';
     dom.productModalPrice.textContent = formattedUnit;
-    dom.btnModalAddToCart.textContent = `Adicionar • ${window.formatCurrency(finalTotal)}`;
+    dom.btnModalAddToCart.textContent = `Adicionar \u2022 ${window.formatCurrency(finalTotal)}`;
     dom.btnModalAddToCart.disabled = false;
   }
 
@@ -1248,7 +1312,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const effectivePrice = getProductEffectivePrice(state.currentModalProduct);
-        const productToAdd = { ...state.currentModalProduct, price: effectivePrice };
+        const burgerExtra = (state.modalBurgerVersion === 'duplo') ? 5 : 0;
+        const isBurguer = isProductNaBrasa(state.currentModalProduct) || isProductNaChapa(state.currentModalProduct);
+        const versionLabel = isBurguer && state.modalBurgerVersion === 'duplo' ? ' (Duplo)' : '';
+
+        const productToAdd = {
+          ...state.currentModalProduct,
+          price: effectivePrice + burgerExtra,
+          name: state.currentModalProduct.name + versionLabel,
+          burger_version: isBurguer ? (state.modalBurgerVersion || 'tradicional') : null
+        };
         const notes = dom.productModalNotes.value;
         window.cart.addItem(
           productToAdd,

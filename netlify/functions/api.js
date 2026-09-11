@@ -314,6 +314,15 @@ exports.handler = async function(event) {
     }
 
     // -------------------------------------------------------
+    // DELETE PROMOTION
+    // -------------------------------------------------------
+    if (method === 'DELETE' && path === 'delete-promotion') {
+      const { id } = body;
+      await supabaseFetch(`/promotions?id=eq.${id}`, { method: 'DELETE' });
+      return respond(200, { success: true });
+    }
+
+    // -------------------------------------------------------
     // GET ORDERS
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-orders') {

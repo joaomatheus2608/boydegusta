@@ -329,7 +329,13 @@
       <section id="tab-promotions" class="admin-tab-content" style="display: none;">
         <div class="admin-card-container">
           <div class="admin-card-header">
-            <h3>Promoções Ativas</h3>
+            <div>
+              <h3 style="margin-bottom: 2px;"><i class="fi fi-sr-flame"></i> Promoções & Combos do Cardápio</h3>
+              <span style="font-size: 0.82rem; color: #64748b;">Configure promoções automáticas por dia da semana e combos oficiais</span>
+            </div>
+            <button id="btnOpenAddPromotion" class="btn-submit-order" style="width: auto; padding: 8px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+              + Nova Promoção
+            </button>
           </div>
           <div id="adminPromotionsList">
             <!-- Renderizado via JS -->
@@ -747,6 +753,21 @@
           <div id="posCustomComboChoices"></div>
         </div>
 
+        <!-- Seção de Tamanho do Hambúrguer (Tradicional vs Duplo +R$ 5) -->
+        <div id="posCustomBurgerSizeSection" style="display: none; margin-bottom: 16px; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 10px; padding: 12px;">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: #9d174d; margin-bottom: 8px;">🍔 Versão do Hambúrguer:</h4>
+          <div style="display: flex; gap: 10px;">
+            <label style="flex: 1; display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid #ec4899; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: 700; color: #831843;">
+              <input type="radio" name="posBurgerSize" value="tradicional" checked />
+              <span>Tradicional (1 Carne)</span>
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid #cbd5e1; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: 700; color: #334155;">
+              <input type="radio" name="posBurgerSize" value="duplo" />
+              <span>Duplo (+ R$ 5,00)</span>
+            </label>
+          </div>
+        </div>
+
         <!-- Seção de Adicionais / Opcionais -->
         <div id="posCustomOptionalsSection" style="margin-bottom: 16px;">
           <h4 style="font-size: 0.88rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Adicionais / Opcionais:
@@ -970,7 +991,7 @@
        MODAL DE EDITAR / CRIAR ADICIONAL
        ========================================== -->
   <div id="optionalEditModal" class="modal-backdrop" style="display: none; z-index: 1100;">
-    <div class="modal-window" style="max-width: 460px;">
+    <div class="modal-window" style="max-width: 480px;">
       <div class="modal-header-bar">
         <h3 id="optionalModalTitle" style="margin: 0;">Novo Adicional</h3>
         <button id="btnOptionalModalClose" class="btn-close-modal">✕</button>
@@ -998,10 +1019,18 @@
           <div class="form-field-group">
             <label class="form-field-label">Aplicabilidade do Adicional</label>
             <select id="editOptTarget" class="form-text-input">
-              <option value="all">Todos os Hambúrgueres (Geral)</option>
+              <option value="all">Todos os Hambúrgueres (Chapa & Brasa)</option>
               <option value="brasa">Apenas Hambúrgueres na Brasa</option>
               <option value="chapa">Apenas Hambúrgueres na Chapa</option>
+              <option value="all_categories">Todas as Categorias do Cardápio</option>
+              <option value="custom">Categorias Específicas (Marcar abaixo)...</option>
             </select>
+          </div>
+          <div id="optCategoriesCheckboxesSection" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+            <label class="form-field-label" style="margin-bottom: 6px;">Exibir este adicional nas categorias:</label>
+            <div id="optCategoriesCheckboxes" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;">
+              <!-- Checkboxes de categorias geradas via JS -->
+            </div>
           </div>
           <div style="display: flex; gap: 10px; margin-top: 18px;">
             <button type="submit" class="btn-submit-order" style="flex: 1;">Salvar Adicional</button>
@@ -1013,10 +1042,10 @@
   </div>
 
   <!-- ==========================================
-       MODAL DE EDITAR PROMOÇÃO / COMBO FIXO
+       MODAL DE EDITAR / CRIAR PROMOÇÃO & COMBOS
        ========================================== -->
   <div id="promotionEditModal" class="modal-backdrop" style="display: none; z-index: 1100;">
-    <div class="modal-window" style="max-width: 500px;">
+    <div class="modal-window" style="max-width: 520px;">
       <div class="modal-header-bar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
         <h3 id="promotionModalTitle" style="margin: 0; color: #fff;">Editar Promoção</h3>
         <button id="btnPromotionModalClose" class="btn-close-modal" style="color: #fff; background: rgba(255,255,255,0.2);">✕</button>
@@ -1025,19 +1054,78 @@
         <form id="promotionEditForm">
           <input type="hidden" id="editPromoId" />
           <div class="form-field-group">
-            <label class="form-field-label">Nome da Promoção *</label>
-            <input type="text" id="editPromoName" class="form-text-input" required />
+            <label class="form-field-label">Nome da Promoção / Combo *</label>
+            <input type="text" id="editPromoName" class="form-text-input" placeholder="Ex: Promoção 2 Beirutes" required />
           </div>
+          <div class="form-cols-2">
+            <div class="form-field-group">
+              <label class="form-field-label">Preço Promocional (R$) *</label>
+              <input type="number" step="0.50" id="editPromoPrice" class="form-text-input" placeholder="Ex: 40.00" required />
+            </div>
+            <div class="form-field-group">
+              <label class="form-field-label">Preço Normal / Outros Dias (R$)</label>
+              <input type="number" step="0.50" id="editPromoRegularPrice" class="form-text-input" placeholder="Ex: 50.00" />
+            </div>
+          </div>
+
+          <!-- Dias da semana com promoção ativa -->
           <div class="form-field-group">
-            <label class="form-field-label">Preço Promocional (R$) *</label>
-            <input type="number" step="0.50" id="editPromoPrice" class="form-text-input" required />
+            <label class="form-field-label">Dias com Preço Promocional Ativo</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;" id="promoDaysOfWeekContainer">
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="1" /> Seg
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="2" /> Ter
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="3" /> Qua
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="4" /> Qui
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="5" /> Sex
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="6" /> Sáb
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" name="promoDay" value="0" /> Dom
+              </label>
+            </div>
+            <span style="font-size: 0.74rem; color: #64748b; margin-top: 4px; display: block;">Se nenhum dia for marcado, o preço promocional vale todos os dias.</span>
           </div>
+
+          <div class="form-cols-2">
+            <div class="form-field-group">
+              <label class="form-field-label">Qtd de Itens no Combo</label>
+              <input type="number" min="1" max="10" id="editPromoQty" class="form-text-input" placeholder="Ex: 2 ou 3" />
+            </div>
+            <div class="form-field-group">
+              <label class="form-field-label">Status</label>
+              <select id="editPromoActive" class="form-text-input">
+                <option value="true">Ativa (Visível)</option>
+                <option value="false">Inativa (Oculta)</option>
+              </select>
+            </div>
+          </div>
+
           <div class="form-field-group">
-            <label class="form-field-label">Descrição</label>
-            <textarea id="editPromoDescription" class="notes-input-box"></textarea>
+            <label class="form-field-label">Itens Escolhíveis do Combo (1 por linha ou separados por vírgula)</label>
+            <textarea id="editPromoAllowedItems" class="notes-input-box" style="height: 60px;" placeholder="Ex:&#10;1 Beirute Maminha&#10;1 Beirute Sol&#10;1 Beirute Camarão 3 Queijos"></textarea>
           </div>
+
+          <div class="form-field-group">
+            <label class="form-field-label">Descrição da Promoção</label>
+            <textarea id="editPromoDescription" class="notes-input-box" style="height: 50px;" placeholder="Descrição exibida no cardápio"></textarea>
+          </div>
+
           <div style="display: flex; gap: 10px; margin-top: 18px;">
             <button type="submit" class="btn-submit-order" style="flex: 1;">Salvar Promoção</button>
+            <button type="button" id="btnDeletePromo" class="btn-ghost-secondary" style="color: var(--primary-red); display: none;">
+              <i class="fi fi-sr-trash"></i> Excluir
+            </button>
             <button type="button" id="btnPromotionModalCancel" class="btn-ghost-secondary">Cancelar</button>
           </div>
         </form>
