@@ -2284,37 +2284,61 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   dom.productEditForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = dom.editProdId.value;
-    const rawPrice = dom.editProdPrice.value.trim();
-    const hasDayPromo = dom.editProdHasDayPromo ? dom.editProdHasDayPromo.checked : false;
-    const rawPromoPrice = dom.editProdPromoPrice ? dom.editProdPromoPrice.value.trim() : '';
-    const promoDaysChecked = Array.from(document.querySelectorAll('input[name="editProdPromoDay"]:checked')).map(cb => Number(cb.value));
-
-    const payload = {
-      name: dom.editProdName.value.trim(),
-      category_id: dom.editProdCategory.value,
-      description: dom.editProdDescription.value.trim(),
-      price: rawPrice ? Number(rawPrice) : null,
-      is_available: dom.editProdAvailable.value === 'true',
-      image_url: dom.editProdImage.value.trim() || null,
-      is_promo: hasDayPromo,
-      promo_days: hasDayPromo ? promoDaysChecked : [],
-      promo_price: (hasDayPromo && rawPromoPrice) ? Number(rawPromoPrice) : null,
-      promo_label: (hasDayPromo && dom.editProdPromoLabel) ? dom.editProdPromoLabel.value.trim() : null,
-      monday_price: (hasDayPromo && promoDaysChecked.includes(1) && rawPromoPrice) ? Number(rawPromoPrice) : null
-    };
-    if (id) payload.id = id;
-
-    const saved = await window.db.saveProduct(payload);
-    if (id) {
-      adminState.products = adminState.products.map(p => p.id === id ? saved : p);
-    } else {
-      adminState.products.push(saved);
+    const submitBtn = dom.productEditForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Salvando produto...';
     }
 
-    dom.productEditModal.style.display = 'none';
-    renderProducts();
-    renderPromotions();
+    try {
+      const id = dom.editProdId.value;
+      const rawPrice = dom.editProdPrice.value.trim();
+      const hasDayPromo = dom.editProdHasDayPromo ? dom.editProdHasDayPromo.checked : false;
+      const rawPromoPrice = dom.editProdPromoPrice ? dom.editProdPromoPrice.value.trim() : '';
+      const promoDaysChecked = Array.from(document.querySelectorAll('input[name="editProdPromoDay"]:checked')).map(cb => Number(cb.value));
+
+      const payload = {
+        name: dom.editProdName.value.trim(),
+        category_id: dom.editProdCategory.value,
+        description: dom.editProdDescription.value.trim(),
+        price: rawPrice ? Number(rawPrice) : null,
+        is_available: dom.editProdAvailable.value === 'true',
+        image_url: dom.editProdImage.value.trim() || null,
+        is_promo: hasDayPromo,
+        promo_days: hasDayPromo ? promoDaysChecked : [],
+        promo_price: (hasDayPromo && rawPromoPrice) ? Number(rawPromoPrice) : null,
+        promo_label: (hasDayPromo && dom.editProdPromoLabel) ? dom.editProdPromoLabel.value.trim() : null,
+        monday_price: (hasDayPromo && promoDaysChecked.includes(1) && rawPromoPrice) ? Number(rawPromoPrice) : null
+      };
+      if (id) payload.id = id;
+
+      const saved = await window.db.saveProduct(payload);
+      
+      if (id) {
+        adminState.products = adminState.products.map(p => p.id === id ? saved : p);
+      } else {
+        adminState.products.push(saved);
+      }
+
+      // Sincroniza lista atualizada
+      const refreshed = await window.db.getProducts();
+      if (Array.isArray(refreshed) && refreshed.length > 0) {
+        adminState.products = refreshed;
+      }
+
+      dom.productEditModal.style.display = 'none';
+      renderProducts();
+      renderPromotions();
+      alert(`Produto "${saved.name}" salvo com sucesso!`);
+    } catch (err) {
+      console.error('Erro ao salvar produto:', err);
+      alert('Erro ao salvar produto. Verifique sua conexão.');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Salvar Produto';
+      }
+    }
   });
 
   // ==========================================

@@ -226,12 +226,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const slug = (cat.slug || '').toLowerCase();
     const name = (cat.name || '').toLowerCase();
 
-    // Acompanhamentos e Adicionais não devem aparecer como seções/itens principais do cardápio
-    if (id === 'cat-adic' || id === 'cat-acomp') return true;
-    if (slug === 'adicional' || slug === 'adicionais' || slug.includes('adici')) return true;
-    if (slug === 'acompanhamento' || slug === 'acompanhamentos' || slug.includes('acomp')) return true;
-    if (name.includes('adicional') || name.includes('adicionais')) return true;
-    if (name.includes('acompanhamento') || name.includes('acompanhamentos')) return true;
+    // Apenas a categoria pura de Adicionais (ingredientes extras) não aparece como seção solta no cardápio
+    if (id === 'cat-adic' || id === 'c1ef7a89-7486-49d4-ad22-475e4a623754') return true;
+    if (slug === 'adicional' || slug === 'adicionais') return true;
+    if (name === 'adicional' || name === 'adicionais') return true;
+    return false;
+  }
+
+  function isProductInCategory(prod, cat) {
+    if (!prod || !cat) return false;
+    if (prod.category_id === cat.id) return true;
+    if (prod.category_id && cat.slug && prod.category_id.toLowerCase() === cat.slug.toLowerCase()) return true;
+    
+    const LEGACY_MAP = {
+      'cat-promo': 'promocoes-do-boy',
+      'cat-acomp': 'acompanhamentos-do-boy',
+      'cat-pao': 'pao-de-alho-do-boy-degusta',
+      'cat-adic': 'adicional',
+      'cat-burguer': 'boy-degusta-burguer',
+      'cat-brasa': 'boy-degusta-na-brasa',
+      'cat-beirute': 'beirute-boy-degusta',
+      'cat-batata': 'batatas-boy-degusta',
+      'cat-bebidas': 'bebidas-do-boy'
+    };
+    if (LEGACY_MAP[prod.category_id] && (LEGACY_MAP[prod.category_id] === cat.slug || LEGACY_MAP[prod.category_id] === cat.id)) return true;
+    if (LEGACY_MAP[cat.id] && (LEGACY_MAP[cat.id] === prod.category_id)) return true;
     return false;
   }
 
@@ -435,7 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.categories.forEach(cat => {
       if (isCategoryHiddenFromMainMenu(cat)) return;
 
-      let categoryProducts = state.products.filter(p => p.category_id === cat.id);
+      let categoryProducts = state.products.filter(p => isProductInCategory(p, cat));
 
       // Filtro de busca por nome, descrição ou categoria
       if (query) {
