@@ -374,15 +374,8 @@
     },
 
     async createOrder(orderPayload) {
-      const orders = getStored(STORAGE_KEYS.ORDERS, []);
-      const nextOrderNumber = orders.length > 0
-        ? Math.max(...orders.map(o => Number(o.order_number) || 0)) + 1
-        : 1;
-
       let newOrder = {
         ...orderPayload,
-        id: generateUuidOrId('order'),
-        order_number: nextOrderNumber,
         status: orderPayload.status || 'novo',
         table_number: orderPayload.table_number ? Number(orderPayload.table_number) : null,
         whatsapp_sent: orderPayload.whatsapp_sent !== false,
@@ -393,11 +386,15 @@
 
       try {
         const result = await api('create-order', 'POST', newOrder);
-        if (result.data) {
+        if (result?.data) {
           newOrder = { ...newOrder, ...result.data, items: result.data.items || result.data.order_items || newOrder.items };
         }
       } catch (e) {
         console.warn('Erro ao criar pedido via API:', e);
+        const orders = getStored(STORAGE_KEYS.ORDERS, []);
+        const nextOrderNumber = orders.length > 0 ? Math.max(...orders.map(o => Number(o.order_number) || 0)) + 1 : 1;
+        newOrder.id = generateUuidOrId('order');
+        newOrder.order_number = nextOrderNumber;
       }
 
       const currentOrders = getStored(STORAGE_KEYS.ORDERS, []);
