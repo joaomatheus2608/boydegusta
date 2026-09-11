@@ -1310,28 +1310,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
-            .data { text-align: center !important; font-size: 11px; font-weight: bold; margin: 2px 0; }
-            .item-line { font-size: 13px; font-weight: 900; margin: 4px 0 1px 0; text-align: center !important; }
-            .item-detail { font-size: 12px; font-weight: bold; margin: 1px 0; text-align: center !important; }
-            .item-obs { font-size: 12px; font-weight: 900; padding: 2px 4px; margin: 2px auto; background: #eee; border: 1px solid #000; text-align: center !important; display: block; }
-            .total-line { font-size: 15px; font-weight: 900; text-align: center !important; margin-top: 4px; }
-            .obrigado { text-align: center !important; font-size: 12px; font-weight: bold; margin-top: 6px; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
+            .data { text-align: center !important; font-size: 13px; font-weight: 900; margin: 2px 0; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; text-align: center !important; }
+            .item-detail { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 4px; margin: 3px auto; background: #eee; border: 2px solid #000; text-align: center !important; display: block; }
+            .total-line { font-size: 18px; font-weight: 900; text-align: center !important; margin-top: 6px; }
+            .obrigado { text-align: center !important; font-size: 14px; font-weight: 900; margin-top: 8px; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -1758,30 +1758,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
-            .tipo { text-align: center !important; font-weight: 900; font-size: 14px; margin: 3px auto; padding: 2px 0; border: 1px solid #000; display: block; }
-            .data { text-align: center !important; font-size: 11px; font-weight: bold; margin: 2px 0; }
-            .entregador { text-align: center !important; font-weight: 900; font-size: 13px; margin: 3px auto; padding: 2px; border: 1px solid #000; display: block; }
-            .info { font-size: 13px; margin: 2px 0; text-align: center !important; }
-            .item-line { font-size: 13px; font-weight: 900; margin: 4px 0 1px 0; text-align: center !important; }
-            .item-detail { font-size: 12px; font-weight: bold; margin: 1px 0; text-align: center !important; }
-            .item-obs { font-size: 12px; font-weight: 900; padding: 2px 4px; margin: 2px auto; background: #eee; border: 1px solid #000; text-align: center !important; display: block; }
-            .total-line { font-size: 15px; font-weight: 900; margin-top: 4px; text-align: center !important; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
+            .tipo { text-align: center !important; font-weight: 900; font-size: 16px; margin: 4px auto; padding: 3px 0; border: 2px solid #000; display: block; }
+            .data { text-align: center !important; font-size: 13px; font-weight: 900; margin: 2px 0; }
+            .entregador { text-align: center !important; font-weight: 900; font-size: 15px; margin: 4px auto; padding: 3px; border: 2px solid #000; display: block; }
+            .info { font-size: 15px; font-weight: 800; margin: 3px 0; text-align: center !important; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; text-align: center !important; }
+            .item-detail { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 4px; margin: 3px auto; background: #eee; border: 2px solid #000; text-align: center !important; display: block; }
+            .total-line { font-size: 18px; font-weight: 900; margin-top: 6px; text-align: center !important; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -1866,26 +1866,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
-            .tipo { text-align: center !important; font-weight: 900; font-size: 14px; margin: 3px auto; padding: 2px 0; border: 1px solid #000; display: block; }
-            .item-line { font-size: 13px; font-weight: 900; margin: 5px 0 1px 0; text-align: center !important; }
-            .item-detail { font-size: 12px; font-weight: bold; margin: 1px 0; text-align: center !important; }
-            .item-obs { font-size: 12px; font-weight: 900; padding: 2px 4px; margin: 2px auto; background: #eee; border: 1px solid #000; text-align: center !important; display: block; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
+            .tipo { text-align: center !important; font-weight: 900; font-size: 16px; margin: 4px auto; padding: 3px 0; border: 2px solid #000; display: block; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; text-align: center !important; }
+            .item-detail { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 4px; margin: 3px auto; background: #eee; border: 2px solid #000; text-align: center !important; display: block; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -1951,28 +1951,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
-            .info { font-size: 13px; margin: 2px 0; text-align: center !important; }
-            .info-big { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
-            .item-line { font-size: 13px; font-weight: 900; margin: 4px 0 1px 0; text-align: center !important; }
-            .item-detail { font-size: 12px; font-weight: bold; margin: 1px 0; text-align: center !important; }
-            .item-obs { font-size: 12px; font-weight: 900; padding: 2px 4px; margin: 2px auto; background: #eee; border: 1px solid #000; text-align: center !important; display: block; }
-            .total-line { font-size: 15px; font-weight: 900; margin-top: 4px; text-align: center !important; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
+            .info { font-size: 15px; font-weight: 800; margin: 3px 0; text-align: center !important; }
+            .info-big { font-size: 17px; font-weight: 900; margin: 3px 0; text-align: center !important; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; text-align: center !important; }
+            .item-detail { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 4px; margin: 3px auto; background: #eee; border: 2px solid #000; text-align: center !important; display: block; }
+            .total-line { font-size: 18px; font-weight: 900; margin-top: 6px; text-align: center !important; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -2047,28 +2047,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
-            .info { font-size: 13px; margin: 2px 0; text-align: center !important; }
-            .info-big { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
-            .item-line { font-size: 13px; font-weight: 900; margin: 4px 0 1px 0; text-align: center !important; }
-            .item-detail { font-size: 12px; font-weight: bold; margin: 1px 0; text-align: center !important; }
-            .item-obs { font-size: 12px; font-weight: 900; padding: 2px 4px; margin: 2px auto; background: #eee; border: 1px solid #000; text-align: center !important; display: block; }
-            .total-line { font-size: 15px; font-weight: 900; margin-top: 4px; text-align: center !important; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
+            .info { font-size: 15px; font-weight: 800; margin: 3px 0; text-align: center !important; }
+            .info-big { font-size: 17px; font-weight: 900; margin: 3px 0; text-align: center !important; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; text-align: center !important; }
+            .item-detail { font-size: 14px; font-weight: 900; margin: 2px 0; text-align: center !important; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 4px; margin: 3px auto; background: #eee; border: 2px solid #000; text-align: center !important; display: block; }
+            .total-line { font-size: 18px; font-weight: 900; margin-top: 6px; text-align: center !important; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -3506,22 +3506,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -3540,18 +3540,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="ticket-wrapper">
             <h2>BOYDEGUSTA</h2>
             <h3>ACERTO DE ENTREGADOR</h3>
-            <div style="text-align: center; font-weight: 900; font-size: 14px; margin: 3px auto; padding: 2px; border: 1px solid #000; display: block;">🛵 ${window.escapeHtml(courierName.toUpperCase())}</div>
-            <div style="text-align: center; font-size: 11px; font-weight: bold; margin: 2px 0;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+            <div style="text-align: center; font-weight: 900; font-size: 16px; margin: 4px auto; padding: 3px; border: 2px solid #000; display: block;">🛵 ${window.escapeHtml(courierName.toUpperCase())}</div>
+            <div style="text-align: center; font-size: 13px; font-weight: 900; margin: 2px 0;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
             <hr />
             <div><strong>Total de Entregas:</strong> ${dayOrders.length}</div>
             <div><strong>Dinheiro em Mãos:</strong> ${window.formatCurrency(totalCash)}</div>
             <div><strong>Total de Taxas:</strong> ${window.formatCurrency(totalFees)}</div>
-            <div style="font-size: 14px; font-weight: 900; margin-top: 3px;">Total Pedidos: ${window.formatCurrency(totalOrders)}</div>
+            <div style="font-size: 16px; font-weight: 900; margin-top: 4px;">Total Pedidos: ${window.formatCurrency(totalOrders)}</div>
             <hr />
-            <div style="font-weight: 900; margin-bottom: 4px;">LISTAGEM DAS ENTREGAS:</div>
+            <div style="font-weight: 900; margin-bottom: 4px; font-size: 15px;">LISTAGEM DAS ENTREGAS:</div>
             ${deliveriesStr || '<div>Nenhuma entrega registrada.</div>'}
             <hr />
-            <div style="text-align: center; margin-top: 16px; font-size: 11px; font-weight: bold;">
+            <div style="text-align: center; margin-top: 16px; font-size: 12px; font-weight: 900;">
               ___________________________<br />
               Assinatura do Entregador
             </div>
@@ -3625,22 +3625,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             * { margin: 0; padding: 0; box-sizing: border-box; text-align: center !important; }
             html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff; text-align: center !important; }
             .ticket-wrapper {
-              font-family: 'Courier New', Courier, monospace;
-              font-size: 13px;
-              font-weight: 700;
+              font-family: Arial, Helvetica, 'Segoe UI', 'Courier New', sans-serif;
+              font-size: 15px;
+              font-weight: 900;
               color: #000;
               width: 100% !important;
               max-width: 100% !important;
               margin: 0 auto !important;
               padding: 4px 7mm 24px 7mm !important;
               word-break: break-word;
-              line-height: 1.25;
+              line-height: 1.3;
               text-align: center !important;
               box-sizing: border-box !important;
             }
-            h2 { font-size: 16px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            h3 { font-size: 14px; font-weight: 900; text-align: center !important; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 4px auto; width: 100%; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center !important; margin: 2px 0; letter-spacing: 0.5px; }
+            h3 { font-size: 17px; font-weight: 900; text-align: center !important; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 5px auto; width: 100%; }
             @media print {
               @page { margin: 0; size: auto; }
               html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
@@ -3659,24 +3659,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="ticket-wrapper">
             <h2>BOYDEGUSTA</h2>
             <h3>FECHAMENTO DE CAIXA DIÁRIO</h3>
-            <div style="text-align: center; font-size: 11px; font-weight: bold;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
-            <div style="text-align: center; font-size: 10px; color: #333;">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+            <div style="text-align: center; font-size: 13px; font-weight: 900;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+            <div style="text-align: center; font-size: 11px; color: #333; font-weight: bold;">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
             <hr />
-            <div style="font-size: 15px; font-weight: 900; margin: 3px 0;">FATURAMENTO: ${window.formatCurrency(totalRevenue)}</div>
-            <div style="font-weight: bold;">Total Pedidos: ${dayOrders.length}</div>
+            <div style="font-size: 17px; font-weight: 900; margin: 4px 0;">FATURAMENTO: ${window.formatCurrency(totalRevenue)}</div>
+            <div style="font-weight: 900; font-size: 15px;">Total Pedidos: ${dayOrders.length}</div>
             <hr />
-            <div style="font-weight: 900; margin-bottom: 2px;">FORMA DE PAGAMENTO:</div>
+            <div style="font-weight: 900; font-size: 15px; margin-bottom: 2px;">FORMA DE PAGAMENTO:</div>
             <div>💵 Dinheiro: ${window.formatCurrency(totalCash)}</div>
             <div>📱 PIX: ${window.formatCurrency(totalPix)}</div>
             <div>💳 Cartão: ${window.formatCurrency(totalCard)}</div>
             <hr />
-            <div style="font-weight: 900; margin-bottom: 2px;">CANAIS DE VENDA:</div>
+            <div style="font-weight: 900; font-size: 15px; margin-bottom: 2px;">CANAIS DE VENDA:</div>
             <div>🪑 Mesas: ${window.formatCurrency(mesaRev)} (${mesaCount} ped)</div>
             <div>🥡 Balcão: ${window.formatCurrency(balcaoRev)} (${balcaoCount} ped)</div>
             <div>🛵 Delivery: ${window.formatCurrency(deliveryRev)} (${deliveryCount} ped)</div>
             <div>🛵 Taxas Entrega: ${window.formatCurrency(totalDeliveryFees)}</div>
             <hr />
-            <div style="font-weight: 900; margin-bottom: 2px;">ENTREGADORES (MOTOBOYS):</div>
+            <div style="font-weight: 900; font-size: 15px; margin-bottom: 2px;">ENTREGADORES (MOTOBOYS):</div>
+            ${couriersStr || '<div>Nenhuma entrega vinculada.</div>'}
           </div>
         </body>
       </html>
