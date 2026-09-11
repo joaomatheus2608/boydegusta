@@ -229,15 +229,41 @@ exports.handler = async function(event) {
     if (method === 'POST' && path === 'save-product') {
       const prod = body;
       let data;
-      if (prod.id && /^[0-9a-f-]{36}$/i.test(prod.id)) {
-        data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
-          method: 'PATCH', body: JSON.stringify(prod)
-        });
-      } else {
-        const { id, ...payload } = prod;
-        data = await supabaseFetch('/products', {
-          method: 'POST', body: JSON.stringify(payload)
-        });
+      const isExistingUuid = prod.id && /^[0-9a-f-]{36}$/i.test(prod.id);
+      
+      try {
+        if (isExistingUuid) {
+          data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
+            method: 'PATCH', body: JSON.stringify(prod)
+          });
+        } else {
+          const { id, ...payload } = prod;
+          data = await supabaseFetch('/products', {
+            method: 'POST', body: JSON.stringify(payload)
+          });
+        }
+      } catch (err) {
+        console.warn('Falha ao salvar produto completo no Supabase, tentando campos padrão:', err.message);
+        const safePayload = {
+          name: prod.name,
+          category_id: prod.category_id,
+          description: prod.description,
+          price: prod.price,
+          image_url: prod.image_url,
+          is_available: prod.is_available !== false,
+          is_promo: Boolean(prod.is_promo),
+          order_index: prod.order_index || 0,
+          updated_at: new Date().toISOString()
+        };
+        if (isExistingUuid) {
+          data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
+            method: 'PATCH', body: JSON.stringify(safePayload)
+          });
+        } else {
+          data = await supabaseFetch('/products', {
+            method: 'POST', body: JSON.stringify(safePayload)
+          });
+        }
       }
       return respond(200, { data: Array.isArray(data) ? data[0] : data });
     }
@@ -265,15 +291,36 @@ exports.handler = async function(event) {
     if (method === 'POST' && path === 'save-optional') {
       const opt = body;
       let data;
-      if (opt.id && /^[0-9a-f-]{36}$/i.test(opt.id)) {
-        data = await supabaseFetch(`/optionals?id=eq.${opt.id}`, {
-          method: 'PATCH', body: JSON.stringify(opt)
-        });
-      } else {
-        const { id, ...payload } = opt;
-        data = await supabaseFetch('/optionals', {
-          method: 'POST', body: JSON.stringify(payload)
-        });
+      const isExistingUuid = opt.id && /^[0-9a-f-]{36}$/i.test(opt.id);
+
+      try {
+        if (isExistingUuid) {
+          data = await supabaseFetch(`/optionals?id=eq.${opt.id}`, {
+            method: 'PATCH', body: JSON.stringify(opt)
+          });
+        } else {
+          const { id, ...payload } = opt;
+          data = await supabaseFetch('/optionals', {
+            method: 'POST', body: JSON.stringify(payload)
+          });
+        }
+      } catch (err) {
+        console.warn('Falha ao salvar adicional completo no Supabase, tentando campos padrão:', err.message);
+        const safePayload = {
+          name: opt.name,
+          price: opt.price,
+          is_active: opt.is_active !== false,
+          order_index: opt.order_index || 0
+        };
+        if (isExistingUuid) {
+          data = await supabaseFetch(`/optionals?id=eq.${opt.id}`, {
+            method: 'PATCH', body: JSON.stringify(safePayload)
+          });
+        } else {
+          data = await supabaseFetch('/optionals', {
+            method: 'POST', body: JSON.stringify(safePayload)
+          });
+        }
       }
       return respond(200, { data: Array.isArray(data) ? data[0] : data });
     }
