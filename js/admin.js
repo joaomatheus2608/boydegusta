@@ -1616,13 +1616,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.ordersListContainer.querySelectorAll('.order-status-select').forEach(select => {
       select.addEventListener('change', async (e) => {
         const orderId = select.getAttribute('data-order-id');
-        const newStatus = e.target.value;
+        let newStatus = e.target.value;
         const order = adminState.orders.find(o => o.id === orderId);
 
         // Se mudou para saiu_para_entrega e for delivery, abre modal de escolha do entregador
         if (newStatus === 'saiu_para_entrega' && order && order.order_type === 'delivery') {
           openDispatchCourierModal(orderId);
           return;
+        }
+
+        // Pedidos de balcão/retirada: quando marcados como "Pronto / Servir", finalizar automaticamente
+        // pois o cliente recebe na hora — não há etapa posterior
+        const isCounterOrder = order && (
+          order.order_type === 'balcao' ||
+          order.order_type === 'pickup' ||
+          order.order_type === 'retirada' ||
+          (!order.order_type && !order.table_number)
+        );
+        if (newStatus === 'pronto_para_retirada' && isCounterOrder) {
+          newStatus = 'finalizado';
         }
 
         await window.db.updateOrderStatus(orderId, newStatus);
@@ -3143,12 +3155,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (o.order_type === 'mesa' || o.table_number) {
         mesaRev += ordTotal;
         mesaCount++;
-      } else if (o.order_type === 'balcao') {
+      } else if (o.order_type === 'balcao' || o.order_type === 'pickup' || o.order_type === 'retirada') {
         balcaoRev += ordTotal;
         balcaoCount++;
-      } else {
+      } else if (o.order_type === 'delivery') {
         deliveryRev += ordTotal;
         deliveryCount++;
+      } else {
+        // fallback: sem tipo definido e sem mesa → balcão
+        balcaoRev += ordTotal;
+        balcaoCount++;
       }
     });
 
@@ -3595,12 +3611,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (o.order_type === 'mesa' || o.table_number) {
         mesaRev += ordTotal;
         mesaCount++;
-      } else if (o.order_type === 'balcao') {
+      } else if (o.order_type === 'balcao' || o.order_type === 'pickup' || o.order_type === 'retirada') {
         balcaoRev += ordTotal;
         balcaoCount++;
-      } else {
+      } else if (o.order_type === 'delivery') {
         deliveryRev += ordTotal;
         deliveryCount++;
+      } else {
+        // fallback: sem tipo definido e sem mesa → balcão
+        balcaoRev += ordTotal;
+        balcaoCount++;
       }
     });
 
