@@ -228,32 +228,77 @@ exports.handler = async function(event) {
     // -------------------------------------------------------
     if (method === 'POST' && path === 'save-product') {
       const prod = body;
-      let data;
-      const isExistingUuid = prod.id && /^[0-9a-f-]{36}$/i.test(prod.id);
+      const isExistingUuid = prod.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(prod.id);
       
+      // Valida e resolve category_id
+      let categoryId = prod.category_id || null;
+      if (categoryId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId)) {
+        const LEGACY_MAP = {
+          'cat-promo': 'promocoes-do-boy',
+          'cat-acomp': 'acompanhamentos-do-boy',
+          'cat-pao': 'pao-de-alho-do-boy-degusta',
+          'cat-adic': 'adicional',
+          'cat-burguer': 'boy-degusta-burguer',
+          'cat-brasa': 'boy-degusta-na-brasa',
+          'cat-beirute': 'beirute-boy-degusta',
+          'cat-batata': 'batatas-boy-degusta',
+          'cat-bebidas': 'bebidas-do-boy'
+        };
+        const targetSlug = LEGACY_MAP[categoryId] || categoryId;
+        try {
+          const cats = await supabaseFetch(`/categories?slug=eq.${targetSlug}&limit=1`);
+          if (Array.isArray(cats) && cats[0]?.id) {
+            categoryId = cats[0].id;
+          } else {
+            const allCats = await supabaseFetch('/categories?limit=1');
+            categoryId = allCats[0]?.id || null;
+          }
+        } catch {
+          categoryId = null;
+        }
+      }
+
+      const cleanPayload = {
+        name: String(prod.name || '').trim(),
+        category_id: categoryId,
+        description: prod.description ? String(prod.description).trim() : '',
+        price: (prod.price !== null && prod.price !== undefined && prod.price !== '') ? Number(prod.price) : null,
+        image_url: prod.image_url ? String(prod.image_url).trim() : null,
+        is_available: prod.is_available !== false,
+        is_active: prod.is_active !== false,
+        is_promo: Boolean(prod.is_promo),
+        promo_days: Array.isArray(prod.promo_days) ? prod.promo_days : [],
+        promo_price: (prod.promo_price !== null && prod.promo_price !== undefined && prod.promo_price !== '') ? Number(prod.promo_price) : null,
+        promo_label: prod.promo_label ? String(prod.promo_label).trim() : null,
+        monday_price: (prod.monday_price !== null && prod.monday_price !== undefined && prod.monday_price !== '') ? Number(prod.monday_price) : null,
+        order_index: Number(prod.order_index) || 0,
+        updated_at: new Date().toISOString()
+      };
+
+      let data;
       try {
         if (isExistingUuid) {
           data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
-            method: 'PATCH', body: JSON.stringify(prod)
+            method: 'PATCH', body: JSON.stringify(cleanPayload)
           });
         } else {
-          const { id, ...payload } = prod;
           data = await supabaseFetch('/products', {
-            method: 'POST', body: JSON.stringify(payload)
+            method: 'POST', body: JSON.stringify(cleanPayload)
           });
         }
       } catch (err) {
         console.warn('Falha ao salvar produto completo no Supabase, tentando campos padrão:', err.message);
         const safePayload = {
-          name: prod.name,
-          category_id: prod.category_id,
-          description: prod.description,
-          price: prod.price,
-          image_url: prod.image_url,
-          is_available: prod.is_available !== false,
-          is_promo: Boolean(prod.is_promo),
-          order_index: prod.order_index || 0,
-          updated_at: new Date().toISOString()
+          name: cleanPayload.name,
+          category_id: cleanPayload.category_id,
+          description: cleanPayload.description,
+          price: cleanPayload.price,
+          image_url: cleanPayload.image_url,
+          is_available: cleanPayload.is_available,
+          is_active: cleanPayload.is_active,
+          is_promo: cleanPayload.is_promo,
+          order_index: cleanPayload.order_index,
+          updated_at: cleanPayload.updated_at
         };
         if (isExistingUuid) {
           data = await supabaseFetch(`/products?id=eq.${prod.id}`, {

@@ -1816,16 +1816,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Cozinha #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
-            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            body { font-family: monospace, Courier, monospace; font-size: 13px; color: #000; width: 72mm; max-width: 100%; margin: 0 auto; padding: 4px 14px 16px 14px; word-break: break-word; }
+            h2 { font-size: 17px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 14px; text-align: center; margin: 2px 0; }
             hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .tipo { text-align: center; font-weight: bold; font-size: 16px; margin: 3px 0; }
-            .item-line { font-size: 16px; font-weight: bold; margin: 5px 0 1px 0; }
-            .item-detail { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 2px 0; text-decoration: underline; }
+            .tipo { text-align: center; font-weight: bold; font-size: 15px; margin: 3px 0; }
+            .item-line { font-size: 15px; font-weight: bold; margin: 5px 0 1px 0; }
+            .item-detail { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 2px 0; text-decoration: underline; }
             @media print {
-              html, body { width: 80mm; }
+              html, body { width: 72mm; margin: 0 auto; padding: 4px 12px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -1877,18 +1877,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Motoboy #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
-            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            body { font-family: monospace, Courier, monospace; font-size: 13px; color: #000; width: 72mm; max-width: 100%; margin: 0 auto; padding: 4px 14px 16px 14px; word-break: break-word; }
+            h2 { font-size: 17px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 14px; text-align: center; margin: 2px 0; }
             hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .info { font-size: 13px; margin: 2px 0; }
-            .info-big { font-size: 15px; font-weight: bold; margin: 3px 0; }
-            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
-            .item-detail { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
-            .total-line { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            .info { font-size: 12px; margin: 2px 0; }
+            .info-big { font-size: 14px; font-weight: bold; margin: 3px 0; }
+            .item-line { font-size: 14px; font-weight: bold; margin: 4px 0 1px 0; }
+            .item-detail { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
+            .total-line { font-size: 15px; font-weight: bold; margin-top: 4px; }
             @media print {
-              html, body { width: 80mm; }
+              html, body { width: 72mm; margin: 0 auto; padding: 4px 12px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -1949,18 +1949,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Balcão #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
-            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
+            body { font-family: monospace, Courier, monospace; font-size: 13px; color: #000; width: 72mm; max-width: 100%; margin: 0 auto; padding: 4px 14px 16px 14px; word-break: break-word; }
+            h2 { font-size: 17px; text-align: center; margin: 2px 0; }
+            h3 { font-size: 14px; text-align: center; margin: 2px 0; }
             hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .info { font-size: 13px; margin: 2px 0; }
-            .info-big { font-size: 15px; font-weight: bold; margin: 3px 0; }
-            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
-            .item-detail { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
-            .total-line { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            .info { font-size: 12px; margin: 2px 0; }
+            .info-big { font-size: 14px; font-weight: bold; margin: 3px 0; }
+            .item-line { font-size: 14px; font-weight: bold; margin: 4px 0 1px 0; }
+            .item-detail { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
+            .item-obs { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
+            .total-line { font-size: 15px; font-weight: bold; margin-top: 4px; }
             @media print {
-              html, body { width: 80mm; }
+              html, body { width: 72mm; margin: 0 auto; padding: 4px 12px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>

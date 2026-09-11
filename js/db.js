@@ -282,15 +282,17 @@
 
       try {
         const result = await api('save-product', 'POST', saved);
-        if (result.data?.id && result.data.id !== saved.id) {
-          const newId = result.data.id;
-          saved.id = newId;
+        if (result?.data) {
+          const apiSaved = result.data;
+          saved = { ...saved, ...apiSaved };
           const currentList = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
           const currentIdx = currentList.findIndex(p => p.id === oldId || p.id === saved.id);
           if (currentIdx >= 0) {
             currentList[currentIdx] = saved;
-            setStored(STORAGE_KEYS.PRODUCTS, currentList);
+          } else {
+            currentList.push(saved);
           }
+          setStored(STORAGE_KEYS.PRODUCTS, currentList);
         }
       } catch (e) {
         console.warn('Erro ao salvar produto via API:', e);
