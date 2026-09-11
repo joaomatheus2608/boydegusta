@@ -1308,19 +1308,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Prévia da Conta - Mesa ${tableNum}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 20px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 20px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
@@ -1333,13 +1335,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             .obrigado { text-align: center; font-size: 12px; font-weight: bold; margin-top: 6px; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 20px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 20px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
@@ -1754,19 +1758,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Cupom Pedido #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 24px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 24px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
@@ -1781,13 +1787,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             .total-line { font-size: 15px; font-weight: 900; margin-top: 4px; text-align: center; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 24px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 24px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
@@ -1860,19 +1868,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Cozinha #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 24px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 24px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
@@ -1883,13 +1893,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             .item-obs { font-size: 12px; font-weight: 900; padding: 2px 4px; margin: 2px 0; background: #eee; border: 1px solid #000; text-align: center; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 24px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 24px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
@@ -1943,19 +1955,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Motoboy #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 24px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 24px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
@@ -1968,13 +1982,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             .total-line { font-size: 15px; font-weight: 900; margin-top: 4px; text-align: center; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 24px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 24px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
@@ -2037,19 +2053,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Balcão #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 24px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 24px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
@@ -2062,13 +2080,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             .total-line { font-size: 15px; font-weight: 900; margin-top: 4px; text-align: center; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 24px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 24px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
@@ -3494,32 +3514,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Acerto Entregador - ${window.escapeHtml(courierName)}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 24px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 24px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
             hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 24px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 24px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
@@ -3611,32 +3635,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Fechamento de Caixa - ${reportDate}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; margin: 0; padding: 0; background: #fff; text-align: center; }
+            html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
             .ticket-wrapper {
               font-family: 'Courier New', Courier, monospace;
               font-size: 13px;
               font-weight: 700;
               color: #000;
-              width: 48mm;
-              max-width: 48mm;
-              margin: 0 auto;
-              padding: 4px 1mm 24px 1mm;
+              width: 44mm;
+              max-width: 44mm;
+              margin-left: 6mm;
+              margin-right: auto;
+              padding: 4px 2mm 24px 2mm;
               word-break: break-word;
               line-height: 1.25;
               text-align: center;
+              box-sizing: border-box;
             }
             h2 { font-size: 16px; font-weight: 900; text-align: center; margin: 2px 0; }
             h3 { font-size: 14px; font-weight: 900; text-align: center; margin: 2px 0; }
             hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
             @media print {
               @page { margin: 0; size: auto; }
-              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; text-align: center !important; }
+              html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
               .ticket-wrapper {
-                width: 48mm !important;
-                max-width: 48mm !important;
-                margin: 0 auto !important;
-                padding: 4px 1mm 24px 1mm !important;
+                width: 44mm !important;
+                max-width: 44mm !important;
+                margin-left: 6mm !important;
+                margin-right: auto !important;
+                padding: 4px 2mm 24px 2mm !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
               }
             }
           </style>
