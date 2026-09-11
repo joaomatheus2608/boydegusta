@@ -1308,18 +1308,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Prévia da Conta - Mesa ${tableNum}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
-            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .data { text-align: center; font-size: 12px; margin: 2px 0; }
-            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
-            .item-detail { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
-            .total-line { font-size: 16px; font-weight: bold; text-align: right; margin-top: 4px; }
-            .obrigado { text-align: center; font-size: 12px; margin-top: 5px; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 22px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 18px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            .data { text-align: center; font-size: 13px; font-weight: bold; margin: 2px 0; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 10px; margin: 2px 0; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 2px 6px; margin: 3px 0; background: #eee; border: 1px solid #000; }
+            .total-line { font-size: 19px; font-weight: 900; text-align: right; margin-top: 6px; }
+            .obrigado { text-align: center; font-size: 14px; font-weight: bold; margin-top: 8px; }
             @media print {
-              html, body { width: 80mm; }
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -1732,20 +1732,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Cupom Pedido #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace; font-size: 14px; color: #000; width: 80mm; padding: 4px 6px; }
-            h2 { font-size: 18px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 15px; text-align: center; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .tipo { text-align: center; font-weight: bold; font-size: 16px; margin: 3px 0; }
-            .data { text-align: center; font-size: 12px; margin: 2px 0; }
-            .entregador { text-align: center; font-weight: bold; margin: 3px 0; padding: 2px; background: #eee; }
-            .info { font-size: 13px; margin: 2px 0; }
-            .item-line { font-size: 15px; font-weight: bold; margin: 4px 0 1px 0; }
-            .item-detail { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 14px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
-            .total-line { font-size: 16px; font-weight: bold; margin-top: 4px; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 22px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 18px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            .tipo { text-align: center; font-weight: 900; font-size: 17px; margin: 4px 0; padding: 2px 0; border: 1px solid #000; }
+            .data { text-align: center; font-size: 13px; font-weight: bold; margin: 2px 0; }
+            .entregador { text-align: center; font-weight: 900; font-size: 15px; margin: 4px 0; padding: 3px; border: 1px solid #000; }
+            .info { font-size: 15px; margin: 3px 0; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 10px; margin: 2px 0; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 2px 6px; margin: 3px 0; background: #eee; border: 1px solid #000; }
+            .total-line { font-size: 19px; font-weight: 900; margin-top: 6px; }
             @media print {
-              html, body { width: 80mm; }
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -1761,7 +1761,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="info"><strong>Fone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
           ${order.delivery_address ? `<div class="info"><strong>End.:</strong> ${window.escapeHtml(order.delivery_address.street || '')}, ${window.escapeHtml(String(order.delivery_address.number || ''))} - ${window.escapeHtml(order.delivery_address.neighborhood || '')}</div>` : ''}
           <div class="info"><strong>Pgto:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco: ${window.formatCurrency(order.change_for)})` : ''}</div>
-          ${order.notes ? `<div class="info"><strong>*** OBS GERAL: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
+          ${order.notes ? `<div class="item-obs"><strong>*** OBS GERAL: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
           <hr />
           ${itemsStr}
           <hr />
@@ -1816,16 +1816,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Cozinha #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace, Courier, monospace; font-size: 13px; color: #000; width: 72mm; max-width: 100%; margin: 0 auto; padding: 4px 14px 16px 14px; word-break: break-word; }
-            h2 { font-size: 17px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 14px; text-align: center; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .tipo { text-align: center; font-weight: bold; font-size: 15px; margin: 3px 0; }
-            .item-line { font-size: 15px; font-weight: bold; margin: 5px 0 1px 0; }
-            .item-detail { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 13px; font-weight: bold; padding-left: 8px; margin: 2px 0; text-decoration: underline; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 22px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 18px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            .tipo { text-align: center; font-weight: 900; font-size: 17px; margin: 4px 0; padding: 2px 0; border: 1px solid #000; }
+            .item-line { font-size: 17px; font-weight: 900; margin: 6px 0 2px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 10px; margin: 2px 0; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 6px; margin: 4px 0; background: #eee; border: 1px solid #000; }
             @media print {
-              html, body { width: 72mm; margin: 0 auto; padding: 4px 12px; }
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -1877,18 +1877,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Motoboy #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace, Courier, monospace; font-size: 13px; color: #000; width: 72mm; max-width: 100%; margin: 0 auto; padding: 4px 14px 16px 14px; word-break: break-word; }
-            h2 { font-size: 17px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 14px; text-align: center; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .info { font-size: 12px; margin: 2px 0; }
-            .info-big { font-size: 14px; font-weight: bold; margin: 3px 0; }
-            .item-line { font-size: 14px; font-weight: bold; margin: 4px 0 1px 0; }
-            .item-detail { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
-            .total-line { font-size: 15px; font-weight: bold; margin-top: 4px; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 22px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 18px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            .info { font-size: 15px; margin: 3px 0; }
+            .info-big { font-size: 16px; font-weight: 900; margin: 3px 0; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 10px; margin: 2px 0; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 6px; margin: 3px 0; background: #eee; border: 1px solid #000; }
+            .total-line { font-size: 19px; font-weight: 900; margin-top: 6px; }
             @media print {
-              html, body { width: 72mm; margin: 0 auto; padding: 4px 12px; }
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -1949,18 +1949,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           <title>Balcão #${order.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: monospace, Courier, monospace; font-size: 13px; color: #000; width: 72mm; max-width: 100%; margin: 0 auto; padding: 4px 14px 16px 14px; word-break: break-word; }
-            h2 { font-size: 17px; text-align: center; margin: 2px 0; }
-            h3 { font-size: 14px; text-align: center; margin: 2px 0; }
-            hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-            .info { font-size: 12px; margin: 2px 0; }
-            .info-big { font-size: 14px; font-weight: bold; margin: 3px 0; }
-            .item-line { font-size: 14px; font-weight: bold; margin: 4px 0 1px 0; }
-            .item-detail { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; }
-            .item-obs { font-size: 12px; font-weight: bold; padding-left: 8px; margin: 1px 0; text-decoration: underline; }
-            .total-line { font-size: 15px; font-weight: bold; margin-top: 4px; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 22px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 18px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            .info { font-size: 15px; margin: 3px 0; }
+            .info-big { font-size: 16px; font-weight: 900; margin: 3px 0; }
+            .item-line { font-size: 16px; font-weight: 900; margin: 5px 0 2px 0; }
+            .item-detail { font-size: 14px; font-weight: bold; padding-left: 10px; margin: 2px 0; }
+            .item-obs { font-size: 14px; font-weight: 900; padding: 3px 6px; margin: 3px 0; background: #eee; border: 1px solid #000; }
+            .total-line { font-size: 19px; font-weight: 900; margin-top: 6px; }
             @media print {
-              html, body { width: 72mm; margin: 0 auto; padding: 4px 12px; }
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
               @page { margin: 0; size: 80mm auto; }
             }
           </style>
@@ -3383,26 +3383,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         <head>
           <title>Acerto Entregador - ${window.escapeHtml(courierName)}</title>
           <style>
-            body { font-family: monospace; font-size: 13px; padding: 12px; }
-            h2, h3 { margin: 4px 0; text-align: center; }
-            hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 14px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 16px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            @media print {
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
+              @page { margin: 0; size: 80mm auto; }
+            }
           </style>
         </head>
         <body>
           <h2>BOYDEGUSTA</h2>
           <h3>ACERTO DE ENTREGADOR</h3>
-          <div style="text-align: center; font-weight: bold; font-size: 15px;">🛵 ${window.escapeHtml(courierName.toUpperCase())}</div>
-          <div style="text-align: center;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+          <div style="text-align: center; font-weight: 900; font-size: 16px; margin: 4px 0; padding: 2px; border: 1px solid #000;">🛵 ${window.escapeHtml(courierName.toUpperCase())}</div>
+          <div style="text-align: center; font-size: 13px; font-weight: bold; margin: 2px 0;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
           <hr />
           <div><strong>Total de Entregas:</strong> ${dayOrders.length}</div>
-          <div><strong>Dinheiro em Mãos (a repassar):</strong> ${window.formatCurrency(totalCash)}</div>
-          <div><strong>Total de Taxas das Corridas:</strong> ${window.formatCurrency(totalFees)}</div>
-          <div><strong>Total Geral dos Pedidos:</strong> ${window.formatCurrency(totalOrders)}</div>
+          <div><strong>Dinheiro em Mãos:</strong> ${window.formatCurrency(totalCash)}</div>
+          <div><strong>Total de Taxas:</strong> ${window.formatCurrency(totalFees)}</div>
+          <div style="font-size: 15px; font-weight: 900; margin-top: 4px;">Total Pedidos: ${window.formatCurrency(totalOrders)}</div>
           <hr />
-          <div style="font-weight: bold; margin-bottom: 6px;">LISTAGEM DAS ENTREGAS:</div>
+          <div style="font-weight: 900; margin-bottom: 6px;">LISTAGEM DAS ENTREGAS:</div>
           ${deliveriesStr || '<div>Nenhuma entrega registrada.</div>'}
           <hr />
-          <div style="text-align: center; margin-top: 20px; font-size: 11px;">
+          <div style="text-align: center; margin-top: 24px; font-size: 12px; font-weight: bold;">
             ___________________________<br />
             Assinatura do Entregador
           </div>
@@ -3462,7 +3468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cCash = cOrders.filter(o => o.payment_method === 'dinheiro').reduce((s, o) => s + (Number(o.total) || 0), 0);
       const cFees = cOrders.reduce((s, o) => s + (Number(o.delivery_fee) || 0), 0);
       couriersStr += `
-        <div>🛵 <strong>${window.escapeHtml(c.name)}:</strong> ${cOrders.length} entregas | Taxas: ${window.formatCurrency(cFees)} | Dinheiro em Mãos: ${window.formatCurrency(cCash)}</div>
+        <div style="margin: 3px 0;">🛵 <strong>${window.escapeHtml(c.name)}:</strong> ${cOrders.length} entregas | Taxas: ${window.formatCurrency(cFees)} | Dinheiro: ${window.formatCurrency(cCash)}</div>
       `;
     });
 
@@ -3472,35 +3478,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         <head>
           <title>Fechamento de Caixa - ${reportDate}</title>
           <style>
-            body { font-family: monospace; font-size: 13px; padding: 12px; }
-            h2, h3 { margin: 4px 0; text-align: center; }
-            hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 14px; font-weight: 600; color: #000; width: 68mm; max-width: 100%; margin: 0 auto; padding: 6px 16px 20px 16px; word-break: break-word; line-height: 1.35; }
+            h2 { font-size: 20px; font-weight: 900; text-align: center; margin: 3px 0; }
+            h3 { font-size: 16px; font-weight: 800; text-align: center; margin: 2px 0; }
+            hr { border: none; border-top: 2px dashed #000; margin: 6px 0; }
+            @media print {
+              html, body { width: 68mm; margin: 0 auto; padding: 4px 14px; }
+              @page { margin: 0; size: 80mm auto; }
+            }
           </style>
         </head>
         <body>
           <h2>BOYDEGUSTA</h2>
           <h3>FECHAMENTO DE CAIXA DIÁRIO</h3>
-          <div style="text-align: center;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
-          <div style="text-align: center;">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+          <div style="text-align: center; font-size: 13px; font-weight: bold;">Data: ${new Date(reportDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+          <div style="text-align: center; font-size: 12px; color: #333;">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
           <hr />
-          <div style="font-size: 16px; font-weight: bold;">FATURAMENTO TOTAL: ${window.formatCurrency(totalRevenue)}</div>
-          <div>Total de Pedidos: ${dayOrders.length}</div>
+          <div style="font-size: 17px; font-weight: 900; margin: 4px 0;">FATURAMENTO: ${window.formatCurrency(totalRevenue)}</div>
+          <div style="font-weight: bold;">Total de Pedidos: ${dayOrders.length}</div>
           <hr />
-          <div><strong>FORMA DE PAGAMENTO:</strong></div>
+          <div style="font-weight: 900; margin-bottom: 3px;">FORMA DE PAGAMENTO:</div>
           <div>💵 Dinheiro: ${window.formatCurrency(totalCash)}</div>
           <div>📱 PIX: ${window.formatCurrency(totalPix)}</div>
           <div>💳 Cartão: ${window.formatCurrency(totalCard)}</div>
           <hr />
-          <div><strong>CANAIS DE VENDA:</strong></div>
-          <div>🪑 Mesas (Salão): ${window.formatCurrency(mesaRev)} (${mesaCount} ped)</div>
-          <div>🥡 Balcão (Viagem): ${window.formatCurrency(balcaoRev)} (${balcaoCount} ped)</div>
+          <div style="font-weight: 900; margin-bottom: 3px;">CANAIS DE VENDA:</div>
+          <div>🪑 Mesas: ${window.formatCurrency(mesaRev)} (${mesaCount} ped)</div>
+          <div>🥡 Balcão: ${window.formatCurrency(balcaoRev)} (${balcaoCount} ped)</div>
           <div>🛵 Delivery: ${window.formatCurrency(deliveryRev)} (${deliveryCount} ped)</div>
-          <div>🛵 Total Taxas de Entrega: ${window.formatCurrency(totalDeliveryFees)}</div>
+          <div>🛵 Total Taxas Entrega: ${window.formatCurrency(totalDeliveryFees)}</div>
           <hr />
-          <div><strong>ENTREGADORES (MOTOBOYS):</strong></div>
+          <div style="font-weight: 900; margin-bottom: 3px;">ENTREGADORES (MOTOBOYS):</div>
           ${couriersStr || '<div>Nenhum entregador atribuído</div>'}
           <hr />
-          <div style="text-align: center; margin-top: 16px; font-size: 11px;">Fechamento de Caixa Concluído</div>
+          <div style="text-align: center; margin-top: 16px; font-size: 12px; font-weight: bold;">Fechamento de Caixa Concluído</div>
         </body>
       </html>
     `);
