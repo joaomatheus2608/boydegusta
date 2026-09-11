@@ -47,7 +47,8 @@ async function supabaseRpc(funcName, params = {}) {
 
 // Upload de imagem via Supabase Storage
 async function uploadToStorage(base64Data, fileName, mimeType) {
-  const url = `${SUPABASE_URL}/storage/v1/object/products/${fileName}`;
+  const cleanFileName = String(fileName || '').replace(/^products\//, '').replace(/[^a-zA-Z0-9_.-]/g, '_');
+  const url = `${SUPABASE_URL}/storage/v1/object/products/${cleanFileName}`;
   const buffer = Buffer.from(base64Data, 'base64');
   const res = await fetch(url, {
     method: 'POST',
@@ -63,7 +64,7 @@ async function uploadToStorage(base64Data, fileName, mimeType) {
     const err = await res.text();
     throw new Error(`Storage error: ${err}`);
   }
-  return `${SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+  return `${SUPABASE_URL}/storage/v1/object/public/products/${cleanFileName}`;
 }
 
 const SALT = 'boydegusta_secure_salt_2026_';

@@ -2225,8 +2225,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.editProdFileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) {
+        const submitBtn = dom.productEditForm ? dom.productEditForm.querySelector('button[type="submit"]') : null;
         try {
-          if (dom.editProdFileName) dom.editProdFileName.textContent = 'Enviando imagem...';
+          if (dom.editProdFileName) dom.editProdFileName.textContent = '⏳ Enviando imagem para a nuvem...';
+          if (dom.editProdImagePreviewWrap) dom.editProdImagePreviewWrap.style.display = 'flex';
+          
+          // Mostrar preview local imediato
+          if (dom.editProdImagePreview) {
+            dom.editProdImagePreview.src = URL.createObjectURL(file);
+          }
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando foto...';
+          }
           
           let uploadedUrl = null;
           if (window.db && window.db.uploadImage) {
@@ -2236,18 +2247,23 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (uploadedUrl) {
             dom.editProdImage.value = uploadedUrl;
             if (dom.editProdImagePreview) dom.editProdImagePreview.src = uploadedUrl;
-            if (dom.editProdFileName) dom.editProdFileName.textContent = `${file.name} (Nuvem)`;
-            if (dom.editProdImagePreviewWrap) dom.editProdImagePreviewWrap.style.display = 'flex';
+            if (dom.editProdFileName) dom.editProdFileName.textContent = `✅ ${file.name} (Salvo na Nuvem)`;
           } else {
+            console.warn('Upload na nuvem falhou, gerando versão otimizada...');
             const compressedDataUrl = await compressImageFile(file, 400, 400, 0.7);
             dom.editProdImage.value = compressedDataUrl;
             if (dom.editProdImagePreview) dom.editProdImagePreview.src = compressedDataUrl;
-            if (dom.editProdFileName) dom.editProdFileName.textContent = file.name;
-            if (dom.editProdImagePreviewWrap) dom.editProdImagePreviewWrap.style.display = 'flex';
+            if (dom.editProdFileName) dom.editProdFileName.textContent = `${file.name} (Local)`;
           }
         } catch (err) {
           console.error('Erro ao processar imagem:', err);
           alert('Erro ao carregar a imagem. Tente escolher outra foto.');
+          if (dom.editProdFileName) dom.editProdFileName.textContent = 'Erro no upload';
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Salvar Produto';
+          }
         }
       }
     });

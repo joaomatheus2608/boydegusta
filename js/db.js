@@ -108,10 +108,10 @@
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-        const ext = file.name.split('.').pop() || 'jpg';
-        const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(2,8)}.${ext}`;
-        const result = await api('upload-image', 'POST', { base64, fileName, mimeType: file.type });
-        return result.url || null;
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        const result = await api('upload-image', 'POST', { base64, fileName, mimeType: file.type || 'image/jpeg' });
+        return result?.url || null;
       } catch (e) {
         console.warn('Erro ao subir imagem:', e);
         return null;
