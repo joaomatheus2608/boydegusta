@@ -1415,13 +1415,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const todayOrders = adminState.orders.filter(o => (o.created_at || '').startsWith(todayStr));
     
     const todayRevenue = todayOrders
-      .filter(o => o.status !== 'cancelado')
+      .filter(o => o.status === 'finalizado')
       .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
     const ongoingStatuses = ['novo', 'confirmado', 'em_preparo', 'saiu_para_entrega', 'pronto_para_retirada'];
     const ongoingOrders = adminState.orders.filter(o => ongoingStatuses.includes(o.status));
 
-    const validOrdersCount = todayOrders.filter(o => o.status !== 'cancelado').length;
+    const validOrdersCount = todayOrders.filter(o => o.status === 'finalizado').length;
     const avgTicket = validOrdersCount > 0 ? (todayRevenue / validOrdersCount) : 0;
 
     dom.statOrdersToday.textContent = todayOrders.length;
@@ -1431,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const productCounts = {};
     adminState.orders.forEach(order => {
-      if (order.status !== 'cancelado') {
+      if (order.status === 'finalizado') {
         const orderItems = order.items || order.order_items || [];
         orderItems.forEach(item => {
           const name = item.name || item.product_name || 'Produto';
@@ -3111,10 +3111,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const reportDate = adminState.selectedCashDate || new Date().toISOString().split('T')[0];
     dom.cashReportDatePicker.value = reportDate;
 
-    // Filtra pedidos do dia que não foram cancelados
+    // Filtra apenas pedidos finalizados do dia
     const dayOrders = adminState.orders.filter(o => {
       const oDate = (o.created_at || '').split('T')[0];
-      return oDate === reportDate && o.status !== 'cancelado';
+      return oDate === reportDate && o.status === 'finalizado';
     });
 
     // Totais Gerais
@@ -3237,7 +3237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const reportDate = adminState.selectedCashDate || new Date().toISOString().split('T')[0];
     const dayOrders = adminState.orders.filter(o => {
       const oDate = (o.created_at || '').split('T')[0];
-      return oDate === reportDate && o.status !== 'cancelado';
+      return oDate === reportDate && o.status === 'finalizado';
     });
 
     let totalRevenue = 0;
@@ -3305,7 +3305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const reportDate = adminState.selectedCashDate || new Date().toISOString().split('T')[0];
     const dayOrders = adminState.orders.filter(o => {
       const oDate = (o.created_at || '').split('T')[0];
-      return oDate === reportDate && o.status !== 'cancelado';
+      return oDate === reportDate && o.status === 'finalizado';
     });
 
     let totalRevenue = 0;
@@ -3472,7 +3472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function printCourierSettlement(courierName, reportDate) {
     const dayOrders = adminState.orders.filter(o => {
       const oDate = (o.created_at || '').split('T')[0];
-      return oDate === reportDate && o.status !== 'cancelado' && o.courier_name && o.courier_name.toLowerCase() === courierName.toLowerCase();
+      return oDate === reportDate && o.status === 'finalizado' && o.courier_name && o.courier_name.toLowerCase() === courierName.toLowerCase();
     });
 
     let deliveriesStr = '';
@@ -3568,7 +3568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function printDailyCashSummary(reportDate) {
     const dayOrders = adminState.orders.filter(o => {
       const oDate = (o.created_at || '').split('T')[0];
-      return oDate === reportDate && o.status !== 'cancelado';
+      return oDate === reportDate && o.status === 'finalizado';
     });
 
     let totalRevenue = 0;
