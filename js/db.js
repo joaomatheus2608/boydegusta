@@ -199,34 +199,20 @@
     },
 
     async saveCategory(cat) {
+      const result = await api('save-category', 'POST', cat);
+      const saved = result?.data || cat;
       const list = getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
-      let saved = { ...cat };
-      if (!saved.id) {
-        saved.id = generateUuidOrId('cat');
-        saved.slug = saved.slug || saved.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        saved.order_index = (cat.order_index !== undefined) ? Number(cat.order_index) : list.length + 1;
-        saved.is_active = saved.is_active !== false;
-      }
-      const idx = list.findIndex(c => c.id === saved.id);
-      const updated = idx >= 0 ? list.map((c, i) => i === idx ? { ...c, ...saved } : c) : [...list, saved];
-      setStored(STORAGE_KEYS.CATEGORIES, updated);
-      try {
-        const result = await api('save-category', 'POST', saved);
-        if (result.data?.id) saved.id = result.data.id;
-      } catch (e) {
-        console.warn('Erro ao salvar categoria via API:', e);
-      }
+      const idx = list.findIndex(c => c.id === cat.id || c.id === saved.id);
+      if (idx >= 0) list[idx] = saved;
+      else list.push(saved);
+      setStored(STORAGE_KEYS.CATEGORIES, list);
       return saved;
     },
 
     async deleteCategory(id) {
+      await api('delete-category', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
       setStored(STORAGE_KEYS.CATEGORIES, list.filter(c => c.id !== id));
-      try {
-        await api('delete-category', 'DELETE', { id });
-      } catch (e) {
-        console.warn('Erro ao deletar categoria via API:', e);
-      }
       return true;
     },
 
@@ -236,7 +222,7 @@
     async getProducts() {
       try {
         const result = await api('get-products', 'GET');
-        if (result.data && result.data.length > 0) {
+        if (Array.isArray(result.data)) {
           const normalized = result.data.map(p => ({
             ...p,
             promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
@@ -255,11 +241,10 @@
     },
 
     async saveProduct(prod) {
-      const list = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
       const normalizedDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price) : (Array.isArray(prod.promo_days) ? prod.promo_days : []);
       const rawPromoPrice = (prod.promo_price !== null && prod.promo_price !== undefined && prod.promo_price !== '') ? Number(prod.promo_price) : null;
       
-      let saved = {
+      const payload = {
         ...prod,
         price: (prod.price !== null && prod.price !== undefined && prod.price !== '') ? Number(prod.price) : null,
         promo_price: rawPromoPrice,
@@ -269,45 +254,22 @@
         monday_price: (normalizedDays.includes(1) && rawPromoPrice) ? rawPromoPrice : (prod.monday_price ? Number(prod.monday_price) : null)
       };
 
-      const oldId = saved.id;
-      if (!saved.id) {
-        saved.id = generateUuidOrId('prod');
-        saved.is_active = saved.is_active !== false;
-        saved.is_available = saved.is_available !== false;
-        saved.order_index = list.length + 1;
-      }
-      const idx = list.findIndex(p => p.id === saved.id || (oldId && p.id === oldId));
-      let updated = idx >= 0 ? list.map((p, i) => i === idx ? { ...p, ...saved } : p) : [...list, saved];
-      setStored(STORAGE_KEYS.PRODUCTS, updated);
+      const result = await api('save-product', 'POST', payload);
+      const saved = result?.data || payload;
 
-      try {
-        const result = await api('save-product', 'POST', saved);
-        if (result?.data) {
-          const apiSaved = result.data;
-          saved = { ...saved, ...apiSaved };
-          const currentList = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
-          const currentIdx = currentList.findIndex(p => p.id === oldId || p.id === saved.id);
-          if (currentIdx >= 0) {
-            currentList[currentIdx] = saved;
-          } else {
-            currentList.push(saved);
-          }
-          setStored(STORAGE_KEYS.PRODUCTS, currentList);
-        }
-      } catch (e) {
-        console.warn('Erro ao salvar produto via API:', e);
-      }
+      const list = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+      const idx = list.findIndex(p => p.id === prod.id || p.id === saved.id);
+      if (idx >= 0) list[idx] = saved;
+      else list.push(saved);
+      setStored(STORAGE_KEYS.PRODUCTS, list);
+
       return saved;
     },
 
     async deleteProduct(id) {
+      await api('delete-product', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
       setStored(STORAGE_KEYS.PRODUCTS, list.filter(p => p.id !== id));
-      try {
-        await api('delete-product', 'DELETE', { id });
-      } catch (e) {
-        console.warn('Erro ao deletar produto via API:', e);
-      }
       return true;
     },
 
@@ -317,7 +279,7 @@
     async getOptionals() {
       try {
         const result = await api('get-optionals', 'GET');
-        if (result.data && result.data.length > 0) {
+        if (Array.isArray(result.data)) {
           setStored(STORAGE_KEYS.OPTIONALS, result.data);
           return result.data;
         }
@@ -328,33 +290,23 @@
     },
 
     async saveOptional(opt) {
+      const payload = { ...opt, price: Number(opt.price) || 0 };
+      const result = await api('save-optional', 'POST', payload);
+      const saved = result?.data || payload;
+
       const list = getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
-      let saved = { ...opt, price: Number(opt.price) || 0 };
-      if (!saved.id) {
-        saved.id = generateUuidOrId('opt');
-        saved.is_active = saved.is_active !== false;
-        saved.order_index = list.length + 1;
-      }
-      const idx = list.findIndex(o => o.id === saved.id);
-      const updated = idx >= 0 ? list.map((o, i) => i === idx ? { ...o, ...saved } : o) : [...list, saved];
-      setStored(STORAGE_KEYS.OPTIONALS, updated);
-      try {
-        const result = await api('save-optional', 'POST', saved);
-        if (result.data?.id) saved.id = result.data.id;
-      } catch (e) {
-        console.warn('Erro ao salvar adicional via API:', e);
-      }
+      const idx = list.findIndex(o => o.id === opt.id || o.id === saved.id);
+      if (idx >= 0) list[idx] = saved;
+      else list.push(saved);
+      setStored(STORAGE_KEYS.OPTIONALS, list);
+
       return saved;
     },
 
     async deleteOptional(id) {
+      await api('delete-optional', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
       setStored(STORAGE_KEYS.OPTIONALS, list.filter(o => o.id !== id));
-      try {
-        await api('delete-optional', 'DELETE', { id });
-      } catch (e) {
-        console.warn('Erro ao deletar adicional via API:', e);
-      }
       return true;
     },
 
@@ -364,7 +316,7 @@
     async getPromotions() {
       try {
         const result = await api('get-promotions', 'GET');
-        if (result.data && result.data.length > 0) {
+        if (Array.isArray(result.data)) {
           setStored(STORAGE_KEYS.PROMOTIONS, result.data);
           return result.data;
         }
@@ -375,32 +327,23 @@
     },
 
     async savePromotion(promo) {
+      const payload = { ...promo, price: Number(promo.price) || 40 };
+      const result = await api('save-promotion', 'POST', payload);
+      const saved = result?.data || payload;
+
       const list = getStored(STORAGE_KEYS.PROMOTIONS, window.INITIAL_PROMOTIONS);
-      let saved = { ...promo, price: Number(promo.price) || 40 };
-      if (!saved.id) {
-        saved.id = generateUuidOrId('promo');
-        saved.is_active = saved.is_active !== false;
-      }
-      const idx = list.findIndex(p => p.id === saved.id);
-      const updated = idx >= 0 ? list.map((p, i) => i === idx ? { ...p, ...saved } : p) : [...list, saved];
-      setStored(STORAGE_KEYS.PROMOTIONS, updated);
-      try {
-        const result = await api('save-promotion', 'POST', saved);
-        if (result.data?.id) saved.id = result.data.id;
-      } catch (e) {
-        console.warn('Erro ao salvar promoção via API:', e);
-      }
+      const idx = list.findIndex(p => p.id === promo.id || p.id === saved.id);
+      if (idx >= 0) list[idx] = saved;
+      else list.push(saved);
+      setStored(STORAGE_KEYS.PROMOTIONS, list);
+
       return saved;
     },
 
     async deletePromotion(id) {
+      await api('delete-promotion', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.PROMOTIONS, window.INITIAL_PROMOTIONS);
       setStored(STORAGE_KEYS.PROMOTIONS, list.filter(p => p.id !== id));
-      try {
-        await api('delete-promotion', 'DELETE', { id });
-      } catch (e) {
-        console.warn('Erro ao excluir promoção via API:', e);
-      }
       return true;
     },
 
