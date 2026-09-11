@@ -271,42 +271,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function getFilteredOptionalsForProduct(product) {
+    if (!product) return [];
     const isBrasa = isProductNaBrasa(product);
     const isChapa = isProductNaChapa(product);
-    const productCategoryId = (product && product.category_id) ? product.category_id : '';
+    const isBurguer = isBrasa || isChapa;
+    const productCategoryId = product.category_id || '';
 
     return state.optionals.filter(opt => {
       if (opt.is_active === false) return false;
       const optName = (opt.name || '').toLowerCase();
-      const target = (opt.target || '').toLowerCase();
+      const target = (opt.target || 'all').toLowerCase();
 
-      // Adicional com categorias específicas (Aplicação personalizada)
+      // 1. Adicional com categorias personalizadas
       if (target === 'custom' && Array.isArray(opt.applicable_category_ids) && opt.applicable_category_ids.length > 0) {
-        // Só exibe se a categoria do produto estiver na lista
         return opt.applicable_category_ids.includes(productCategoryId);
       }
 
-      // Exibe para todas as categorias sem filtro
+      // 2. Exibe para todas as categorias sem exceção
       if (target === 'all_categories') return true;
 
-      const isOptBrasa = target === 'brasa' || optName.includes('brasa');
-      const isOptChapa = target === 'chapa' || optName.includes('chapa');
-
-      // Se o hambúrguer for na Brasa, só mostra Adicional Carne Brasa + adicionais gerais (esconde Chapa)
-      if (isBrasa) {
-        if (isOptChapa) return false;
-        return true;
+      // 3. Adicional específico de Brasa
+      if (target === 'brasa' || optName.includes('brasa')) {
+        return isBrasa;
       }
 
-      // Se o hambúrguer for na Chapa, só mostra Adicional Carne Chapa + adicionais gerais (esconde Brasa)
-      if (isChapa) {
-        if (isOptBrasa) return false;
-        return true;
+      // 4. Adicional específico de Chapa
+      if (target === 'chapa' || optName.includes('chapa')) {
+        return isChapa;
       }
 
-      // Para outros itens (não burguer), oculta adicionais específicos de carne brasa/chapa
-      if (isOptBrasa || isOptChapa) return false;
-      return true;
+      // 5. Adicionais de Hambúrguer gerais (target 'all' ou padrão):
+      // NUNCA exibe em bebidas, acompanhamentos ou itens que não sejam hambúrguer
+      return isBurguer;
     });
   }
 

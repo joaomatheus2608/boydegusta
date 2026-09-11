@@ -872,34 +872,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     let optHtml = '';
     const isBrasa = isProductNaBrasa(product);
     const isChapa = isProductNaChapa(product);
+    const isBurguer = isBrasa || isChapa;
     const productCategoryId = product.category_id || '';
 
     const activeOptionals = (adminState.optionals || []).filter(opt => {
       if (opt.is_active === false) return false;
       const optName = (opt.name || '').toLowerCase();
-      const target = (opt.target || '').toLowerCase();
+      const target = (opt.target || 'all').toLowerCase();
 
-      // Verificação por categoria específica (applicable_category_ids)
+      // 1. Verificação por categoria específica personalizada
       if (target === 'custom' && Array.isArray(opt.applicable_category_ids) && opt.applicable_category_ids.length > 0) {
-        if (!opt.applicable_category_ids.includes(productCategoryId)) return false;
-      } else if (target === 'all_categories') {
-        // Exibe para todas as categorias, sem filtro de brasa/chapa
-        return true;
-      } else {
-        const isOptBrasa = target === 'brasa' || optName.includes('brasa');
-        const isOptChapa = target === 'chapa' || optName.includes('chapa');
+        return opt.applicable_category_ids.includes(productCategoryId);
+      }
+      
+      // 2. Exibe para todas as categorias
+      if (target === 'all_categories') return true;
 
-        if (isBrasa) {
-          if (isOptChapa) return false;
-        } else if (isChapa) {
-          if (isOptBrasa) return false;
-        } else {
-          // Para outros itens (não burguer), oculta adicionais de carne
-          if (isOptBrasa || isOptChapa) return false;
-        }
+      // 3. Específico de Brasa
+      if (target === 'brasa' || optName.includes('brasa')) {
+        return isBrasa;
       }
 
-      return true;
+      // 4. Específico de Chapa
+      if (target === 'chapa' || optName.includes('chapa')) {
+        return isChapa;
+      }
+
+      // 5. Adicionais gerais de Hambúrguer (target 'all' ou padrão)
+      // NUNCA exibe em bebidas, acompanhamentos ou itens que não sejam hambúrguer
+      return isBurguer;
     });
 
     if (activeOptionals.length > 0) {
