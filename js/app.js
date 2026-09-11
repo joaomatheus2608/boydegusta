@@ -312,44 +312,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getProductEffectivePrice(product) {
     if (!product) return 0;
-    const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
-    const regularPrice = product.price !== null && product.price !== undefined ? Number(product.price) : 0;
-
-    // Promoção por dia da semana configurada no produto
-    const promoDays = Array.isArray(product.promo_days) ? product.promo_days.map(Number) : (product.monday_price ? [1] : []);
+    if (window.getProductEffectivePrice) {
+      return window.getProductEffectivePrice(product);
+    }
+    const todayDay = new Date().getDay();
+    const regularPrice = (product.price !== null && product.price !== undefined && product.price !== '') ? Number(product.price) : 0;
+    const promoDays = window.normalizePromoDays ? window.normalizePromoDays(product.promo_days, product.monday_price) : (Array.isArray(product.promo_days) ? product.promo_days.map(Number) : (product.monday_price ? [1] : []));
     const promoPrice = Number(product.promo_price) || Number(product.monday_price) || 0;
 
     if (promoPrice > 0 && promoDays.length > 0 && (product.is_promo !== false)) {
-      const isPromoDay = promoDays.includes(todayDay);
-      if (isPromoDay) {
-        return promoPrice;
-      }
+      if (promoDays.includes(todayDay)) return promoPrice;
       return regularPrice > 0 ? regularPrice : promoPrice;
     }
-
-    // Se é uma promoção legada linkada
-    if (product.promo_id) {
-      const matchedPromo = (state.promotions || []).find(p => p.id === product.promo_id);
-      if (matchedPromo) return getPromoEffectivePrice(matchedPromo);
-    }
-
     return regularPrice;
   }
 
   function getPromoEffectivePrice(promo) {
     if (!promo) return 0;
-    const promoPrice = Number(promo.price) || 0;
-    const regularPrice = Number(promo.regular_price) || 0;
-    const activeDays = Array.isArray(promo.active_days) ? promo.active_days.map(Number) : [];
-
-    // Se tem preço regular e dias promocionais definidos
-    if (regularPrice > 0 && activeDays.length > 0) {
-      const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
-      const isPromoDay = activeDays.includes(todayDay);
-      return isPromoDay ? promoPrice : regularPrice;
-    }
-
-    return promoPrice;
+    return getProductEffectivePrice(promo);
   }
 
   // ==========================================
@@ -484,9 +464,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         categoryProducts.forEach(prod => {
           const isUnavailable = prod.is_available === false;
-          const promoDays = Array.isArray(prod.promo_days) ? prod.promo_days.map(Number) : (prod.monday_price ? [1] : []);
+          const promoDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price) : (Array.isArray(prod.promo_days) ? prod.promo_days.map(Number) : (prod.monday_price ? [1] : []));
           const promoPrice = Number(prod.promo_price) || Number(prod.monday_price) || 0;
-          const hasDayPromo = promoPrice > 0 && promoDays.length > 0 && (prod.is_promo !== false);
+          const isPromoActive = prod.is_promo !== false;
+          const hasDayPromo = isPromoActive && promoPrice > 0 && promoDays.length > 0;
           const isPromoToday = hasDayPromo && promoDays.includes(todayDay);
 
           const regularPrice = Number(prod.price) || 0;
@@ -589,14 +570,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.productModalQtyVal.textContent = '1';
     dom.productModalNotes.value = '';
 
-    // Verifica se é uma das 2 Promoções de Combo Oficiais
+    // Verifica se é uma promoção ou combo
+    const matchedPromo = (state.promotions || []).find(p => p.id === product.promo_id);
     const isCombo3Burguers = product.name.toLowerCase().includes('combo 3') || (product.promo_id === 'promo-1');
     const isPromo2Beirutes = product.name.toLowerCase().includes('2 beirute') || (product.promo_id === 'promo-2');
+    const isCombo = Boolean(isCombo3Burguers || isPromo2Beirutes || (matchedPromo && matchedPromo.allowed_items?.length > 0) || (product.allowed_items && product.allowed_items.length > 0));
 
     // Seção de tamanho do hambúrguer (Tradicional vs Duplo)
     const burgerSizeSection = document.getElementById('productModalBurgerSizeSection');
-    const isBurguer = !isCombo3Burguers && !isPromo2Beirutes &&
-      (isProductNaBrasa(product) || isProductNaChapa(product));
+    const isBurguer = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
 
     if (burgerSizeSection) {
       if (isBurguer) {
@@ -623,15 +605,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    if (isCombo3Burguers || isPromo2Beirutes) {
+    if (isCombo) {
       dom.productModalOptionalsSection.style.display = 'none';
       dom.productModalComboSection.style.display = 'block';
 
-      const allowedItems = isCombo3Burguers
-        ? ['Burguer Calabresa e Coalho', 'Burguer Cheddar e Bacon', 'Burguer Creme Cheese']
-        : ['1 Beirute Maminha', '1 Beirute Sol', '1 Beirute Camarão 3 Queijos'];
-      
-      const requiredQty = isCombo3Burguers ? 3 : 2;
+      let allowedItems = [];
+      let requiredQty = 3;
+
+      if (matchedPromo && matchedPromo.allowed_items?.length > 0) {
+        allowedItems = matchedPromo.allowed_items;
+        requiredQty = matchedPromo.required_quantity || 3;
+      } else if (product.allowed_items && product.allowed_items.length > 0) {
+        allowedItems = product.allowed_items;
+        requiredQty = product.required_quantity || 3;
+      } else if (isPromo2Beirutes) {
+        allowedItems = ['1 Beirute Maminha', '1 Beirute Sol', '1 Beirute Camarão 3 Queijos'];
+        requiredQty = 2;
+      } else {
+        allowedItems = ['Burguer Calabresa e Coalho', 'Burguer Cheddar e Bacon', 'Burguer Creme Cheese'];
+        requiredQty = 3;
+      }
       
       allowedItems.forEach(item => {
         state.modalComboCounts[item] = 0;
@@ -732,8 +725,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.productModalComboCountText.textContent = `${currentSum} de ${requiredQty} escolhidos`;
 
     if (currentSum === requiredQty) {
+      const effectivePrice = state.currentModalProduct ? getProductEffectivePrice(state.currentModalProduct) : 40.00;
       dom.btnModalAddToCart.disabled = false;
-      dom.btnModalAddToCart.textContent = `Adicionar Combo — ${window.formatCurrency(40.00)}`;
+      dom.btnModalAddToCart.textContent = `Adicionar Combo — ${window.formatCurrency(effectivePrice)}`;
     } else {
       dom.btnModalAddToCart.disabled = true;
       dom.btnModalAddToCart.textContent = `Escolha mais ${requiredQty - currentSum} item(ns)`;

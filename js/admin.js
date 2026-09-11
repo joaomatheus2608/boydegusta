@@ -168,6 +168,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     dayPromoLabel: document.getElementById('dayPromoLabel'),
     dayPromoActive: document.getElementById('dayPromoActive'),
 
+    // Aba de Promoções do Dia
+    btnOpenAddPromotionTab: document.getElementById('btnOpenAddPromotionTab'),
+    adminPromotionsTableBody: document.getElementById('adminPromotionsTableBody'),
+    adminSearchPromoInput: document.getElementById('adminSearchPromoInput'),
+    adminFilterPromoDay: document.getElementById('adminFilterPromoDay'),
+    promoStatTotal: document.getElementById('promoStatTotal'),
+    promoStatToday: document.getElementById('promoStatToday'),
+
     // Categorias
     btnOpenAddCategory: document.getElementById('btnOpenAddCategory'),
     adminCategoriesTableBody: document.getElementById('adminCategoriesTableBody'),
@@ -640,50 +648,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getProductEffectivePrice(product) {
     if (!product) return 0;
-    const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
-    const regularPrice = product.price !== null && product.price !== undefined ? Number(product.price) : 0;
-
-    // Promoção por dia da semana configurada diretamente no produto
-    const promoDays = Array.isArray(product.promo_days) ? product.promo_days.map(Number) : (product.monday_price ? [1] : []);
+    if (window.getProductEffectivePrice) {
+      return window.getProductEffectivePrice(product);
+    }
+    const todayDay = new Date().getDay();
+    const regularPrice = (product.price !== null && product.price !== undefined && product.price !== '') ? Number(product.price) : 0;
+    const promoDays = window.normalizePromoDays ? window.normalizePromoDays(product.promo_days, product.monday_price) : (Array.isArray(product.promo_days) ? product.promo_days.map(Number) : (product.monday_price ? [1] : []));
     const promoPrice = Number(product.promo_price) || Number(product.monday_price) || 0;
 
     if (promoPrice > 0 && promoDays.length > 0 && (product.is_promo !== false)) {
-      const isPromoDay = promoDays.includes(todayDay);
-      if (isPromoDay) {
-        return promoPrice;
-      }
+      if (promoDays.includes(todayDay)) return promoPrice;
       return regularPrice > 0 ? regularPrice : promoPrice;
     }
-
-    // Se o produto tem promo_id, busca a promoção para calcular preço
-    const promoId = product.promo_id;
-    if (promoId) {
-      const matchedPromo = (adminState.promotions || []).find(p => p.id === promoId);
-      if (matchedPromo) return getPromoEffectivePrice(matchedPromo);
-    }
-
-    // Se é uma promoção direta
-    if (product.is_promo) {
-      return getPromoEffectivePrice(product);
-    }
-
     return regularPrice;
   }
 
   function getPromoEffectivePrice(promo) {
     if (!promo) return 0;
-    const promoPrice = Number(promo.price) || 0;
-    const regularPrice = Number(promo.regular_price) || 0;
-    const activeDays = Array.isArray(promo.active_days) ? promo.active_days : [];
-
-    // Se tem preço regular e dias ativos definidos
-    if (regularPrice > 0 && activeDays.length > 0) {
-      const todayDay = new Date().getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
-      const isPromoDay = activeDays.includes(todayDay);
-      return isPromoDay ? promoPrice : regularPrice;
-    }
-
-    return promoPrice;
+    return getProductEffectivePrice(promo);
   }
 
   function renderPosCatalog() {
@@ -754,15 +736,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.posProductsCatalogGrid.querySelectorAll('.pos-prod-card').forEach(card => {
       card.addEventListener('click', () => {
         const itemId = card.getAttribute('data-item-id');
-        const isPromo = card.getAttribute('data-is-promo') === 'true';
-        let foundItem;
-
-        if (isPromo) {
-          foundItem = adminState.promotions.find(p => p.id === itemId);
-          foundItem = foundItem ? { ...foundItem, is_promo: true } : null;
-        } else {
-          foundItem = adminState.products.find(p => p.id === itemId);
-        }
+        let foundItem = (adminState.products || []).find(p => p.id === itemId) || (adminState.promotions || []).find(p => p.id === itemId);
 
         if (foundItem) {
           openPosItemCustomModal(foundItem);
@@ -807,13 +781,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function openPosItemCustomModal(product) {
+    const isCombo = Boolean(product.allowed_items && product.allowed_items.length > 0);
     const isPromo = Boolean(product.is_promo);
     const basePrice = getProductEffectivePrice(product);
-    const isBurger = !isPromo && (isProductNaBrasa(product) || isProductNaChapa(product));
+    const isBurger = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
 
     adminState.posCustomItemState = {
       product,
-      isPromo,
+      isPromo: isPromo || isCombo,
       basePrice,
       qty: 1,
       selectedOptionals: [],
@@ -2044,8 +2019,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Cálculo e exibição da promoção por dia
       const promoPrice = Number(p.promo_price) || Number(p.monday_price) || 0;
-      const promoDays = Array.isArray(p.promo_days) ? p.promo_days.map(Number) : (p.monday_price ? [1] : []);
-      const hasDayPromo = promoPrice > 0 && promoDays.length > 0;
+      const promoDays = window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days.map(Number) : (p.monday_price ? [1] : []));
+      const isPromoActive = p.is_promo !== false;
+      const hasDayPromo = isPromoActive && promoPrice > 0 && promoDays.length > 0;
       const isPromoToday = hasDayPromo && promoDays.includes(todayDay);
 
       let promoColHtml = '<span style="color: #94a3b8; font-size: 0.78rem;">Sem promoção</span>';
@@ -2203,13 +2179,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.editProdImage.value = prod.image_url || '';
 
       // Configuração de Promoção por Dia no Produto
-      const promoDays = Array.isArray(prod.promo_days) ? prod.promo_days.map(String) : (prod.monday_price ? ['1'] : []);
-      const hasPromo = (prod.promo_price || prod.monday_price || (prod.promo_days && prod.promo_days.length > 0) || prod.is_promo);
+      const promoDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price).map(String) : (Array.isArray(prod.promo_days) ? prod.promo_days.map(String) : (prod.monday_price ? ['1'] : []));
+      const hasPromo = Boolean(prod.is_promo && (prod.promo_price || prod.monday_price || promoDays.length > 0));
       if (dom.editProdHasDayPromo) dom.editProdHasDayPromo.checked = Boolean(hasPromo);
       if (dom.editProdDayPromoFields) dom.editProdDayPromoFields.style.display = hasPromo ? 'block' : 'none';
       if (dom.editProdPromoPrice) dom.editProdPromoPrice.value = prod.promo_price || prod.monday_price || '';
       if (dom.editProdPromoLabel) dom.editProdPromoLabel.value = prod.promo_label || '';
-      promoDayCheckboxes.forEach(cb => { cb.checked = promoDays.includes(cb.value); });
+      promoDayCheckboxes.forEach(cb => { cb.checked = promoDays.includes(String(cb.value)); });
 
       if (prod.image_url && dom.editProdImagePreviewWrap) {
         dom.editProdImagePreview.src = prod.image_url;
@@ -2321,6 +2297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     dom.productEditModal.style.display = 'none';
     renderProducts();
+    renderPromotions();
   });
 
   // ==========================================
@@ -2423,16 +2400,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   dom.btnOpenAddCategory.addEventListener('click', () => openCategoryModal(null));
 
   // ==========================================
-  // 5. PROMOÇÕES POR DIA DA SEMANA (MODAL EXCLUSIVO)
+  // 5. PROMOÇÕES POR DIA DA SEMANA
   // ==========================================
   function openDayPromoModal(productId = null) {
     if (!dom.dayPromoModal || !dom.dayPromoProdSelect) return;
 
-    // Popula o select de produtos
+    // Popula o select de produtos ordenado por categoria e nome
     let optionsHtml = '<option value="">-- Escolha o produto --</option>';
     adminState.products.forEach(p => {
       const isSelected = p.id === productId;
-      optionsHtml += `<option value="${p.id}" ${isSelected ? 'selected' : ''}>${window.escapeHtml(p.name)} (${p.price ? window.formatCurrency(p.price) : 'Sem preço'})</option>`;
+      const formattedPrice = p.price !== null && p.price !== undefined ? window.formatCurrency(p.price) : 'Sem preço';
+      optionsHtml += `<option value="${p.id}" ${isSelected ? 'selected' : ''}>${window.escapeHtml(p.name)} (${formattedPrice})</option>`;
     });
     dom.dayPromoProdSelect.innerHTML = optionsHtml;
 
@@ -2451,15 +2429,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       dom.dayPromoProdId.value = prod.id;
-      dom.dayPromoRegularPrice.value = prod.price !== null && prod.price !== undefined ? prod.price : '';
+      dom.dayPromoRegularPrice.value = (prod.price !== null && prod.price !== undefined) ? prod.price : '';
       dom.dayPromoPrice.value = prod.promo_price || prod.monday_price || '';
       if (dom.dayPromoLabel) dom.dayPromoLabel.value = prod.promo_label || '';
       if (dom.dayPromoActive) dom.dayPromoActive.value = String(prod.is_promo !== false);
 
-      const activeDays = Array.isArray(prod.promo_days) ? prod.promo_days.map(String) : (prod.monday_price ? ['1'] : []);
-      dayCheckboxes.forEach(cb => { cb.checked = activeDays.includes(cb.value); });
+      const activeDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price).map(String) : (Array.isArray(prod.promo_days) ? prod.promo_days.map(String) : (prod.monday_price ? ['1'] : []));
+      dayCheckboxes.forEach(cb => { cb.checked = activeDays.includes(String(cb.value)); });
 
-      const hasPromo = (prod.promo_price || prod.monday_price || (prod.promo_days && prod.promo_days.length > 0));
+      const hasPromo = Boolean(prod.promo_price || prod.monday_price || (activeDays.length > 0));
       if (dom.btnRemoveDayPromo) dom.btnRemoveDayPromo.style.display = hasPromo ? 'inline-flex' : 'none';
     }
 
@@ -2477,6 +2455,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (dom.btnOpenDayPromoModal) {
     dom.btnOpenDayPromoModal.addEventListener('click', () => openDayPromoModal(null));
+  }
+  if (dom.btnOpenAddPromotionTab) {
+    dom.btnOpenAddPromotionTab.addEventListener('click', () => openDayPromoModal(null));
   }
 
   if (dom.btnDayPromoModalClose) {
@@ -2500,8 +2481,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         prod.promo_price = null;
         prod.promo_label = null;
         prod.monday_price = null;
-        await window.db.saveProduct(prod);
+        const saved = await window.db.saveProduct(prod);
+        adminState.products = adminState.products.map(p => p.id === prodId ? saved : p);
         renderProducts();
+        renderPromotions();
       }
       dom.dayPromoModal.style.display = 'none';
     });
@@ -2543,11 +2526,165 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       dom.dayPromoModal.style.display = 'none';
       renderProducts();
+      renderPromotions();
     });
   }
 
   function renderPromotions() {
-    // Compatibilidade interna
+    if (!dom.adminPromotionsTableBody) return;
+
+    const todayDay = new Date().getDay();
+    const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const DAY_NAMES_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+    const promoFilter = dom.adminFilterPromoDay ? dom.adminFilterPromoDay.value : 'all';
+    const searchQuery = dom.adminSearchPromoInput ? dom.adminSearchPromoInput.value.toLowerCase().trim() : '';
+
+    // Coleta todos os produtos que possuem promoção configurada
+    const promoProducts = (adminState.products || []).filter(p => {
+      const pPrice = Number(p.promo_price) || Number(p.monday_price) || 0;
+      const pDays = window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : []);
+      return pPrice > 0 && pDays.length > 0;
+    });
+
+    // Atualiza contadores
+    let countActiveToday = 0;
+    promoProducts.forEach(p => {
+      if (p.is_promo !== false && window.isPromoActiveToday ? window.isPromoActiveToday(p, todayDay) : false) {
+        countActiveToday++;
+      }
+    });
+
+    if (dom.promoStatTotal) dom.promoStatTotal.textContent = String(promoProducts.length);
+    if (dom.promoStatToday) dom.promoStatToday.textContent = `${countActiveToday} (Hoje: ${DAY_NAMES_FULL[todayDay]})`;
+
+    // Filtra lista para a tabela
+    let filtered = promoProducts.filter(p => {
+      const pDays = window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : [];
+      
+      if (promoFilter === 'today') {
+        if (!pDays.includes(todayDay) || p.is_promo === false) return false;
+      } else if (promoFilter !== 'all') {
+        const filterDayNum = Number(promoFilter);
+        if (!pDays.includes(filterDayNum)) return false;
+      }
+
+      if (searchQuery) {
+        const nameMatch = (p.name || '').toLowerCase().includes(searchQuery);
+        const descMatch = (p.description || '').toLowerCase().includes(searchQuery);
+        const labelMatch = (p.promo_label || '').toLowerCase().includes(searchQuery);
+        if (!nameMatch && !descMatch && !labelMatch) return false;
+      }
+
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      dom.adminPromotionsTableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">
+            <i class="fi fi-sr-flame" style="font-size: 2rem; color: #cbd5e1; display: block; margin-bottom: 8px;"></i>
+            Nenhuma promoção encontrada com os filtros selecionados.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = '';
+    filtered.forEach(p => {
+      const pDays = window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : [];
+      const promoPrice = Number(p.promo_price) || Number(p.monday_price) || 0;
+      const regularPrice = Number(p.price) || 0;
+      const isToday = pDays.includes(todayDay) && (p.is_promo !== false);
+      const isAct = p.is_promo !== false;
+
+      let discountText = '';
+      if (regularPrice > 0 && promoPrice > 0 && regularPrice > promoPrice) {
+        const discountPct = Math.round(((regularPrice - promoPrice) / regularPrice) * 100);
+        discountText = `<span style="font-size: 0.72rem; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">-${discountPct}%</span>`;
+      }
+
+      let dayBadgesHtml = pDays.map(d => {
+        const isThisDay = d === todayDay;
+        return `<span style="display: inline-block; font-size: 0.74rem; font-weight: 700; padding: 2px 7px; border-radius: 5px; margin-right: 4px; margin-bottom: 3px; background: ${isThisDay ? '#dcfce7' : '#f1f5f9'}; color: ${isThisDay ? '#166534' : '#475569'}; border: 1px solid ${isThisDay ? '#86efac' : '#cbd5e1'};">${DAY_NAMES[d]}${isThisDay ? ' 🔥' : ''}</span>`;
+      }).join('');
+
+      html += `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img class="table-img-thumb" src="${p.image_url || 'boylogo.jpg'}" alt="${window.escapeHtml(p.name)}" />
+              <div>
+                <strong>${window.escapeHtml(p.name)}</strong>
+                ${p.promo_label ? `<div style="font-size: 0.75rem; color: #d97706; font-weight: 700;">🏷️ ${window.escapeHtml(p.promo_label)}</div>` : ''}
+              </div>
+            </div>
+          </td>
+          <td><span style="color: #64748b; ${isToday ? 'text-decoration: line-through;' : ''}">${regularPrice > 0 ? window.formatCurrency(regularPrice) : 'A definir'}</span></td>
+          <td>
+            <strong style="color: #16a34a; font-size: 0.95rem;">${window.formatCurrency(promoPrice)}</strong>
+            ${discountText}
+          </td>
+          <td>
+            <div style="display: flex; flex-wrap: wrap; max-width: 260px;">
+              ${dayBadgesHtml}
+            </div>
+          </td>
+          <td>
+            <span class="product-status-pill ${isAct ? 'status-active' : 'status-inactive'}">
+              ${isAct ? (isToday ? '🔥 Ativa Hoje' : 'Ativa') : 'Inativa'}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-ghost-secondary btn-edit-promo-row" data-prod-id="${p.id}" style="font-size: 0.78rem;">
+                <i class="fi fi-sr-pencil"></i> Editar
+              </button>
+              <button class="btn-ghost-secondary btn-delete-promo-row" data-prod-id="${p.id}" style="font-size: 0.78rem; color: var(--primary-red);" title="Remover Promoção">
+                <i class="fi fi-sr-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    dom.adminPromotionsTableBody.innerHTML = html;
+
+    // Conecta botões da tabela de promoções
+    dom.adminPromotionsTableBody.querySelectorAll('.btn-edit-promo-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-prod-id');
+        openDayPromoModal(id);
+      });
+    });
+
+    dom.adminPromotionsTableBody.querySelectorAll('.btn-delete-promo-row').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-prod-id');
+        const prod = adminState.products.find(p => p.id === id);
+        if (!prod) return;
+        if (confirm(`Remover a promoção de "${prod.name}"?`)) {
+          prod.is_promo = false;
+          prod.promo_days = [];
+          prod.promo_price = null;
+          prod.promo_label = null;
+          prod.monday_price = null;
+          const saved = await window.db.saveProduct(prod);
+          adminState.products = adminState.products.map(p => p.id === id ? saved : p);
+          renderProducts();
+          renderPromotions();
+        }
+      });
+    });
+  }
+
+  if (dom.adminSearchPromoInput) {
+    dom.adminSearchPromoInput.addEventListener('input', () => renderPromotions());
+  }
+  if (dom.adminFilterPromoDay) {
+    dom.adminFilterPromoDay.addEventListener('change', () => renderPromotions());
   }
 
   // ==========================================
@@ -3541,10 +3678,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     let items = [];
 
     (adminState.promotions || []).forEach(p => {
-      if (p.is_active !== false) items.push({ id: p.id, name: `🔥 ${p.name}`, price: Number(p.price) || 0, description: p.description || 'Combo Promocional' });
+      if (p.is_active !== false) {
+        const effPrice = getProductEffectivePrice(p);
+        items.push({ id: p.id, name: `🔥 ${p.name}`, price: effPrice, description: p.description || 'Combo Promocional' });
+      }
     });
     (adminState.products || []).forEach(p => {
-      if (p.is_active !== false && p.is_available !== false) items.push({ id: p.id, name: p.name, price: Number(p.price) || 0, description: p.description || '' });
+      if (p.is_active !== false && p.is_available !== false) {
+        const effPrice = getProductEffectivePrice(p);
+        items.push({ id: p.id, name: p.name, price: effPrice, description: p.description || '' });
+      }
     });
 
     if (q) items = items.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q));

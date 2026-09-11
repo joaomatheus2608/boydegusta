@@ -237,31 +237,61 @@
       try {
         const result = await api('get-products', 'GET');
         if (result.data && result.data.length > 0) {
-          setStored(STORAGE_KEYS.PRODUCTS, result.data);
-          return result.data;
+          const normalized = result.data.map(p => ({
+            ...p,
+            promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
+          }));
+          setStored(STORAGE_KEYS.PRODUCTS, normalized);
+          return normalized;
         }
       } catch (e) {
         console.warn('Erro ao buscar produtos via API:', e);
       }
-      return getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+      const local = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+      return local.map(p => ({
+        ...p,
+        promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
+      }));
     },
 
     async saveProduct(prod) {
       const list = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
-      let saved = { ...prod };
-      saved.price = (saved.price !== null && saved.price !== undefined && saved.price !== '') ? Number(saved.price) : null;
+      const normalizedDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price) : (Array.isArray(prod.promo_days) ? prod.promo_days : []);
+      const rawPromoPrice = (prod.promo_price !== null && prod.promo_price !== undefined && prod.promo_price !== '') ? Number(prod.promo_price) : null;
+      
+      let saved = {
+        ...prod,
+        price: (prod.price !== null && prod.price !== undefined && prod.price !== '') ? Number(prod.price) : null,
+        promo_price: rawPromoPrice,
+        promo_days: normalizedDays,
+        promo_label: prod.promo_label ? String(prod.promo_label).trim() : null,
+        is_promo: Boolean(prod.is_promo || (normalizedDays.length > 0 && rawPromoPrice > 0)),
+        monday_price: (normalizedDays.includes(1) && rawPromoPrice) ? rawPromoPrice : (prod.monday_price ? Number(prod.monday_price) : null)
+      };
+
+      const oldId = saved.id;
       if (!saved.id) {
         saved.id = generateUuidOrId('prod');
         saved.is_active = saved.is_active !== false;
         saved.is_available = saved.is_available !== false;
         saved.order_index = list.length + 1;
       }
-      const idx = list.findIndex(p => p.id === saved.id);
-      const updated = idx >= 0 ? list.map((p, i) => i === idx ? { ...p, ...saved } : p) : [...list, saved];
+      const idx = list.findIndex(p => p.id === saved.id || (oldId && p.id === oldId));
+      let updated = idx >= 0 ? list.map((p, i) => i === idx ? { ...p, ...saved } : p) : [...list, saved];
       setStored(STORAGE_KEYS.PRODUCTS, updated);
+
       try {
         const result = await api('save-product', 'POST', saved);
-        if (result.data?.id) saved.id = result.data.id;
+        if (result.data?.id && result.data.id !== saved.id) {
+          const newId = result.data.id;
+          saved.id = newId;
+          const currentList = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+          const currentIdx = currentList.findIndex(p => p.id === oldId || p.id === saved.id);
+          if (currentIdx >= 0) {
+            currentList[currentIdx] = saved;
+            setStored(STORAGE_KEYS.PRODUCTS, currentList);
+          }
+        }
       } catch (e) {
         console.warn('Erro ao salvar produto via API:', e);
       }

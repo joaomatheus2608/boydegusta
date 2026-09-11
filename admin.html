@@ -76,6 +76,7 @@
         <button class="admin-tab-btn" data-tab="dashboard"><i class="fi fi-sr-chart-histogram"></i> Dashboard</button>
         <button class="admin-tab-btn" data-tab="orders"><i class="fi fi-sr-motorcycle"></i> Pedidos em Tempo Real</button>
         <button class="admin-tab-btn" data-tab="products"><i class="fi fi-sr-hamburger"></i> Produtos</button>
+        <button class="admin-tab-btn" data-tab="promotions"><i class="fi fi-sr-flame"></i> Promoções do Dia</button>
         <button class="admin-tab-btn" data-tab="categories"><i class="fi fi-sr-folder"></i> Categorias</button>
         <button class="admin-tab-btn" data-tab="optionals"><i class="fi fi-sr-box"></i> Adicionais</button>
         <button class="admin-tab-btn" data-tab="neighborhoods"><i class="fi fi-sr-marker"></i> Bairros & Taxas</button>
@@ -294,6 +295,70 @@
               </thead>
               <tbody id="adminProductsTableBody">
                 <!-- Renderizado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================
+           3.1. GESTÃO DE PROMOÇÕES E OFERTAS DO DIA
+           ======================================== -->
+      <section id="tab-promotions" class="admin-tab-content" style="display: none;">
+        <div class="admin-card-container">
+          <div class="admin-card-header">
+            <div>
+              <h3 style="margin-bottom: 2px;"><i class="fi fi-sr-flame" style="color: #d97706;"></i> Promoções e Ofertas por Dia</h3>
+              <span style="font-size: 0.82rem; color: #64748b;">Controle preços promocionais automáticos por dia da semana (Segunda a Domingo)</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="btnOpenAddPromotionTab" class="btn-submit-order" style="width: auto; padding: 8px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="fi fi-sr-flame"></i> + Nova Promoção por Dia
+              </button>
+            </div>
+          </div>
+
+          <!-- Métricas Rápidas de Promoções -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
+              <div style="font-size: 0.78rem; color: #64748b; font-weight: 700;">PROMOÇÕES CADASTRADAS</div>
+              <div id="promoStatTotal" style="font-size: 1.3rem; font-weight: 900; color: #0f172a; margin-top: 2px;">0</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px;">
+              <div style="font-size: 0.78rem; color: #166534; font-weight: 700;">🔥 ATIVAS HOJE</div>
+              <div id="promoStatToday" style="font-size: 1.3rem; font-weight: 900; color: #16a34a; margin-top: 2px;">0</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="adminSearchPromoInput" class="form-text-input" placeholder="Buscar promoção ou produto..." style="max-width: 280px;" />
+            <select id="adminFilterPromoDay" class="form-text-input" style="max-width: 200px;">
+              <option value="all">Todos os Dias</option>
+              <option value="today">🔥 Apenas Ativas Hoje</option>
+              <option value="1">Segunda-feira</option>
+              <option value="2">Terça-feira</option>
+              <option value="3">Quarta-feira</option>
+              <option value="4">Quinta-feira</option>
+              <option value="5">Sexta-feira</option>
+              <option value="6">Sábado</option>
+              <option value="0">Domingo</option>
+            </select>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="admin-data-table">
+              <thead>
+                <tr>
+                  <th>Produto / Combo</th>
+                  <th>Preço Normal</th>
+                  <th>Preço Promocional</th>
+                  <th>Dias da Semana Ativos</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="adminPromotionsTableBody">
+                <!-- Renderizado dinamicamente via JS -->
               </tbody>
             </table>
           </div>
