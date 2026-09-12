@@ -1427,24 +1427,156 @@
 
   /* Modais no Mobile */
   .modal-window {
-    width: 94vw !important;
-    max-height: 90vh !important;
+    width: 95vw !important;
+    max-height: 92vh !important;
     margin: auto;
     border-radius: 16px !important;
   }
 
+  /* POS / Lançador de Pedidos no Mobile */
+  .pos-modal-window {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    height: 94vh !important;
+    max-height: 94vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
   .pos-modal-layout {
     flex-direction: column !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .pos-catalog-section {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-    max-height: 42vh;
+    border-right: none !important;
+    border-bottom: 8px solid #f1f5f9 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px 14px !important;
+    flex: none !important;
   }
 
+  .pos-customer-bar {
+    padding: 8px 10px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .pos-customer-bar .form-field-label {
+    font-size: 0.74rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .pos-customer-bar .form-text-input {
+    padding: 6px 10px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .pos-categories-nav {
+    padding-bottom: 6px !important;
+    margin-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pos-cat-chip {
+    padding: 5px 11px !important;
+    font-size: 0.76rem !important;
+  }
+
+  .pos-products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    overflow: visible !important;
+    max-height: none !important;
+    flex: none !important;
+  }
+
+  .pos-prod-card {
+    padding: 10px 8px !important;
+    min-height: 95px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  .pos-prod-name {
+    font-size: 0.82rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .pos-prod-desc {
+    font-size: 0.70rem !important;
+    margin-bottom: 6px !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .pos-prod-price {
+    font-size: 0.88rem !important;
+  }
+
+  .pos-btn-add {
+    padding: 4px 8px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Seção de Comanda Atual no Mobile */
   .pos-cart-section {
-    max-height: 38vh;
+    flex: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  .pos-cart-header {
+    padding: 12px 14px !important;
+    background: #f8fafc !important;
+  }
+
+  .pos-cart-items-list {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 10px 14px !important;
+  }
+
+  .pos-cart-empty {
+    padding: 24px 12px !important;
+  }
+
+  .pos-cart-footer {
+    padding: 14px 14px 36px 14px !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+  }
+
+  .pos-cart-footer .btn-submit-order {
+    padding: 12px 16px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* Modal de Customização de Item no Mobile */
+  #posItemCustomModal .modal-window {
+    width: 95vw !important;
+    max-height: 90vh !important;
+    margin: auto !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  #posItemCustomModal .modal-scroll-body {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 14px !important;
+    flex: 1 1 auto !important;
   }
 
   /* Tabelas com Scroll Horizontal Seguro */
