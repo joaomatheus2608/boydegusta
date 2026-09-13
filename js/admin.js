@@ -781,14 +781,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function openPosItemCustomModal(product) {
-    const isCombo = Boolean(product.allowed_items && product.allowed_items.length > 0);
-    const isPromo = Boolean(product.is_promo);
+    const matchedPromo = (adminState.promotions || []).find(p => p.id === product.promo_id || p.id === product.id || (p.name && product.name && p.name.trim().toLowerCase() === product.name.trim().toLowerCase()));
+    const prodNameLower = (product.name || '').toLowerCase();
+    const isCombo3Burguers = prodNameLower.includes('combo 3') || prodNameLower.includes('3 hamburguer') || prodNameLower.includes('3 hambúrguer') || (product.promo_id === 'promo-1') || (product.id === 'promo-1') || (product.id === 'prod-promo-1');
+    const isPromo2Beirutes = prodNameLower.includes('2 beirute') || (product.promo_id === 'promo-2') || (product.id === 'promo-2') || (product.id === 'prod-promo-2');
+    const isCombo = Boolean(isCombo3Burguers || isPromo2Beirutes || (matchedPromo && Array.isArray(matchedPromo.allowed_items) && matchedPromo.allowed_items.length > 0) || (Array.isArray(product.allowed_items) && product.allowed_items.length > 0));
+
+    let allowedItems = [];
+    let requiredQty = 3;
+
+    if (matchedPromo && Array.isArray(matchedPromo.allowed_items) && matchedPromo.allowed_items.length > 0) {
+      allowedItems = matchedPromo.allowed_items;
+      requiredQty = matchedPromo.required_quantity || (isPromo2Beirutes ? 2 : 3);
+    } else if (Array.isArray(product.allowed_items) && product.allowed_items.length > 0) {
+      allowedItems = product.allowed_items;
+      requiredQty = product.required_quantity || (isPromo2Beirutes ? 2 : 3);
+    } else if (isPromo2Beirutes) {
+      allowedItems = ['1 Beirute Maminha', '1 Beirute Sol', '1 Beirute Camarão 3 Queijos'];
+      requiredQty = 2;
+    } else if (isCombo3Burguers) {
+      allowedItems = ['Burguer Calabresa e Coalho', 'Burguer Cheddar e Bacon', 'Burguer Creme Cheese'];
+      requiredQty = 3;
+    }
+
+    const isPromo = Boolean(product.is_promo || isCombo);
     const basePrice = getProductEffectivePrice(product);
     const isBurger = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
 
     adminState.posCustomItemState = {
       product,
-      isPromo: isPromo || isCombo,
+      isPromo,
+      isCombo,
+      allowedItems,
+      requiredQty,
       basePrice,
       qty: 1,
       selectedOptionals: [],
@@ -797,13 +822,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       burgerVersion: 'tradicional'
     };
 
+    allowedItems.forEach(item => {
+      adminState.posCustomItemState.comboChoices[item] = 0;
+    });
+
     dom.posCustomItemTitle.textContent = `${isPromo ? '🔥 ' : ''}${product.name}`;
     dom.posCustomItemDescription.textContent = product.description || '';
     dom.posCustomItemBasePrice.textContent = window.formatCurrency(basePrice);
     dom.posCustomItemNotes.value = '';
     dom.posCustomItemQty.textContent = '1';
 
-    // Seção versão hambúrguer
+    // Seção versão hambúrguer (desativada para combos)
     const burgerSizeSection = document.getElementById('posCustomBurgerSizeSection');
     if (burgerSizeSection) {
       if (isBurger) {
@@ -823,19 +852,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    if (isPromo && product.allowed_items && product.allowed_items.length > 0) {
+    // Seção de Seleção de Sabores do Combo
+    if (isCombo && allowedItems.length > 0) {
       dom.posCustomComboSection.style.display = 'block';
-      const reqQty = product.required_quantity || 3;
-      let comboHtml = `<p style="font-size: 0.8rem; color: #92400e; margin-bottom: 8px;">Selecione ${reqQty} itens para este combo:</p>`;
+      let comboHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: #92400e; margin: 0;">Escolha os ${requiredQty} sabores do combo:</h4>
+          <span id="posComboCounterBadge" style="font-size: 0.8rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 9999px; border: 1px solid #fde68a;">0/${requiredQty}</span>
+        </div>
+      `;
       
-      product.allowed_items.forEach(allowedName => {
+      allowedItems.forEach(allowedName => {
         comboHtml += `
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #fde68a;">
-            <span style="font-size: 0.85rem; font-weight: 600;">${allowedName}</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; border-bottom: 1px dashed #fde68a;">
+            <span style="font-size: 0.85rem; font-weight: 600; color: #1e293b;">${window.escapeHtml(allowedName)}</span>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <button type="button" class="btn-qty-step btn-combo-minus" data-name="${allowedName}">-</button>
-              <span class="combo-qty-count" data-name="${allowedName}" style="font-weight: 800; font-size: 0.9rem; width: 18px; text-align: center;">0</span>
-              <button type="button" class="btn-qty-step btn-combo-plus" data-name="${allowedName}">+</button>
+              <button type="button" class="btn-qty-step btn-combo-minus" data-name="${window.escapeHtml(allowedName)}">-</button>
+              <span class="combo-qty-count" data-name="${window.escapeHtml(allowedName)}" style="font-weight: 800; font-size: 0.95rem; width: 22px; text-align: center; color: #0f172a;">0</span>
+              <button type="button" class="btn-qty-step btn-combo-plus" data-name="${window.escapeHtml(allowedName)}">+</button>
             </div>
           </div>
         `;
@@ -847,7 +881,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           e.stopPropagation();
           const name = btn.getAttribute('data-name');
           const currentTotal = Object.values(adminState.posCustomItemState.comboChoices).reduce((a, b) => a + b, 0);
-          if (currentTotal < reqQty) {
+          if (currentTotal < requiredQty) {
             adminState.posCustomItemState.comboChoices[name] = (adminState.posCustomItemState.comboChoices[name] || 0) + 1;
             updateComboUI();
           }
@@ -860,7 +894,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           const name = btn.getAttribute('data-name');
           if (adminState.posCustomItemState.comboChoices[name] > 0) {
             adminState.posCustomItemState.comboChoices[name]--;
-            if (adminState.posCustomItemState.comboChoices[name] === 0) delete adminState.posCustomItemState.comboChoices[name];
             updateComboUI();
           }
         });
@@ -899,11 +932,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // 5. Adicionais gerais de Hambúrguer (target 'all' ou padrão)
-      // NUNCA exibe em bebidas, acompanhamentos ou itens que não sejam hambúrguer
       return isBurguer;
     });
 
-    if (activeOptionals.length > 0) {
+    if (!isCombo && activeOptionals.length > 0) {
       dom.posCustomOptionalsSection.style.display = 'block';
       activeOptionals.forEach(opt => {
         const optPrice = Number(opt.price) || 0;
@@ -933,10 +965,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateComboUI() {
+    if (!adminState.posCustomItemState) return;
+    const reqQty = adminState.posCustomItemState.requiredQty || 3;
+    const choices = adminState.posCustomItemState.comboChoices || {};
+    const currentTotal = Object.values(choices).reduce((a, b) => a + b, 0);
+
     dom.posCustomComboChoices.querySelectorAll('.combo-qty-count').forEach(span => {
       const name = span.getAttribute('data-name');
-      span.textContent = adminState.posCustomItemState.comboChoices[name] || 0;
+      span.textContent = choices[name] || 0;
     });
+
+    const badge = document.getElementById('posComboCounterBadge');
+    if (badge) {
+      badge.textContent = `${currentTotal}/${reqQty}`;
+      if (currentTotal === reqQty) {
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#15803d';
+        badge.style.borderColor = '#86efac';
+      } else {
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#b45309';
+        badge.style.borderColor = '#fde68a';
+      }
+    }
   }
 
   function updateCustomSubtotal() {
@@ -979,28 +1030,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   dom.btnConfirmCustomItem.addEventListener('click', () => {
     if (!adminState.posCustomItemState) return;
 
-    const { product, isPromo, basePrice, qty, selectedOptionals, burgerVersion } = adminState.posCustomItemState;
+    const { product, isPromo, isCombo, basePrice, qty, selectedOptionals, burgerVersion, requiredQty } = adminState.posCustomItemState;
     const notes = dom.posCustomItemNotes.value.trim();
 
     let comboChoicesList = [];
-    if (isPromo && product.allowed_items && product.allowed_items.length > 0) {
-      const reqQty = product.required_quantity || 3;
-      const totalSelected = Object.values(adminState.posCustomItemState.comboChoices).reduce((a, b) => a + b, 0);
+    if (isCombo) {
+      const reqQty = requiredQty || 3;
+      const totalSelected = Object.values(adminState.posCustomItemState.comboChoices || {}).reduce((a, b) => a + b, 0);
       if (totalSelected < reqQty) {
-        alert(`Por favor, selecione os ${reqQty} itens do combo antes de adicionar.`);
+        alert(`Por favor, selecione os ${reqQty} sabores do combo antes de adicionar. (Selecionados: ${totalSelected}/${reqQty})`);
         return;
       }
-      comboChoicesList = Object.entries(adminState.posCustomItemState.comboChoices).map(([name, count]) => ({
-        name,
-        qty: count
-      }));
+      comboChoicesList = Object.entries(adminState.posCustomItemState.comboChoices)
+        .filter(([_, count]) => count > 0)
+        .map(([name, count]) => ({
+          name,
+          qty: count
+        }));
     }
 
     const extraPrice = selectedOptionals.reduce((sum, o) => sum + o.price, 0);
     const unitPrice = basePrice + extraPrice;
 
     // Nome com versão do hambúrguer
-    const isBurger = !isPromo && (isProductNaBrasa(product) || isProductNaChapa(product));
+    const isBurger = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
     const versionLabel = isBurger && burgerVersion === 'duplo' ? ' (Duplo)' : '';
 
     addItemToPosCart({
@@ -1011,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       subtotal: unitPrice * qty,
       optionals: selectedOptionals,
       notes: notes,
-      is_combo: isPromo,
+      is_combo: isCombo || isPromo,
       combo_choices: comboChoicesList,
       burger_version: isBurger ? (burgerVersion || 'tradicional') : null
     });
