@@ -2,6 +2,25 @@
 // BOYDEGUSTA - CONTROLADOR DO PAINEL ADMINISTRATIVO COM PDV, MESAS, ENTREGADORES E CAIXA
 // ========================================================
 
+// Retorna a data de expediente do restaurante (YYYY-MM-DD no horário local do Brasil).
+// Turnos/pedidos que avançam pela madrugada (antes das 05h da manhã) pertencem ao expediente do dia anterior!
+function getBusinessDateString(dateInput = new Date()) {
+  if (!dateInput) return '';
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return '';
+
+  const businessDate = new Date(d.getTime());
+  // Se o pedido foi feito na madrugada (entre 00:00 e 04:59), pertence ao expediente da noite anterior
+  if (businessDate.getHours() < 5) {
+    businessDate.setDate(businessDate.getDate() - 1);
+  }
+
+  const year = businessDate.getFullYear();
+  const month = String(businessDate.getMonth() + 1).padStart(2, '0');
+  const day = String(businessDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   let adminState = {
     settings: null,
@@ -17,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     productSearch: '',
     productCategoryFilter: 'all',
     neighborhoodSearch: '',
-    selectedCashDate: new Date().toISOString().split('T')[0],
+    selectedCashDate: getBusinessDateString(new Date()),
     
     // Estado do PDV / Salão
     posTarget: { type: 'mesa', tableNumber: 1 },
@@ -1464,8 +1483,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. DASHBOARD & MÉTRICAS
   // ==========================================
   function renderDashboard() {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayOrders = adminState.orders.filter(o => (o.created_at || '').startsWith(todayStr));
+    const todayStr = getBusinessDateString(new Date());
+    const todayOrders = adminState.orders.filter(o => getBusinessDateString(o.created_at) === todayStr);
     
     const todayRevenue = todayOrders
       .filter(o => o.status === 'finalizado')
@@ -3173,12 +3192,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 9. FECHAMENTO DE CAIXA DIÁRIO & ACERTO DE ENTREGADORES
   // ==========================================
   function renderCashReport() {
-    const reportDate = adminState.selectedCashDate || new Date().toISOString().split('T')[0];
+    const reportDate = adminState.selectedCashDate || getBusinessDateString(new Date());
     dom.cashReportDatePicker.value = reportDate;
 
-    // Filtra apenas pedidos finalizados do dia
+    // Filtra apenas pedidos finalizados do dia de expediente
     const dayOrders = adminState.orders.filter(o => {
-      const oDate = (o.created_at || '').split('T')[0];
+      const oDate = getBusinessDateString(o.created_at);
       return oDate === reportDate && o.status === 'finalizado';
     });
 
@@ -3303,9 +3322,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Abertura do Modal de Fechamento Manual
   function openManualCashCloseModal() {
-    const reportDate = adminState.selectedCashDate || new Date().toISOString().split('T')[0];
+    const reportDate = adminState.selectedCashDate || getBusinessDateString(new Date());
     const dayOrders = adminState.orders.filter(o => {
-      const oDate = (o.created_at || '').split('T')[0];
+      const oDate = getBusinessDateString(o.created_at);
       return oDate === reportDate && o.status === 'finalizado';
     });
 
@@ -3371,9 +3390,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   dom.btnCancelManualCashClose.addEventListener('click', () => { dom.manualCashCloseModal.style.display = 'none'; });
 
   dom.btnConfirmManualCashClose.addEventListener('click', async () => {
-    const reportDate = adminState.selectedCashDate || new Date().toISOString().split('T')[0];
+    const reportDate = adminState.selectedCashDate || getBusinessDateString(new Date());
     const dayOrders = adminState.orders.filter(o => {
-      const oDate = (o.created_at || '').split('T')[0];
+      const oDate = getBusinessDateString(o.created_at);
       return oDate === reportDate && o.status === 'finalizado';
     });
 
@@ -3540,7 +3559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Impressão do Acerto Individual do Entregador
   function printCourierSettlement(courierName, reportDate) {
     const dayOrders = adminState.orders.filter(o => {
-      const oDate = (o.created_at || '').split('T')[0];
+      const oDate = getBusinessDateString(o.created_at);
       return oDate === reportDate && o.status === 'finalizado' && o.courier_name && o.courier_name.toLowerCase() === courierName.toLowerCase();
     });
 
@@ -3636,7 +3655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Impressão do Fechamento de Caixa Geral do Dia
   function printDailyCashSummary(reportDate) {
     const dayOrders = adminState.orders.filter(o => {
-      const oDate = (o.created_at || '').split('T')[0];
+      const oDate = getBusinessDateString(o.created_at);
       return oDate === reportDate && o.status === 'finalizado';
     });
 
@@ -3766,14 +3785,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   dom.btnCashToday.addEventListener('click', () => {
-    adminState.selectedCashDate = new Date().toISOString().split('T')[0];
+    adminState.selectedCashDate = getBusinessDateString(new Date());
     renderCashReport();
   });
 
   dom.btnCashYesterday.addEventListener('click', () => {
     const yest = new Date();
     yest.setDate(yest.getDate() - 1);
-    adminState.selectedCashDate = yest.toISOString().split('T')[0];
+    adminState.selectedCashDate = getBusinessDateString(yest);
     renderCashReport();
   });
 
