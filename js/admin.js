@@ -766,8 +766,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function isProductNaBrasa(product) {
     if (!product) return false;
-    const catId = product.category_id || '';
-    const cat = (adminState.categories || []).find(c => c.id === catId);
+    const catId = (product.category_id || '').toLowerCase();
+    const cat = (adminState.categories || []).find(c => c.id === product.category_id);
     const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
     const catName = cat ? (cat.name || '').toLowerCase() : '';
     const prodName = (product.name || '').toLowerCase();
@@ -784,19 +784,59 @@ document.addEventListener('DOMContentLoaded', async () => {
   function isProductNaChapa(product) {
     if (!product) return false;
     if (isProductNaBrasa(product)) return false;
-    const catId = product.category_id || '';
-    const cat = (adminState.categories || []).find(c => c.id === catId);
+    const catId = (product.category_id || '').toLowerCase();
+    const cat = (adminState.categories || []).find(c => c.id === product.category_id);
     const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
     const catName = cat ? (cat.name || '').toLowerCase() : '';
     const prodName = (product.name || '').toLowerCase();
+    const prodDesc = (product.description || '').toLowerCase();
+
+    // Excluir explicitamente categorias que não são hambúrguer
+    if (catId === 'cat-bebidas' || catSlug.includes('bebida') || catName.includes('bebida')) return false;
+    if (catId === 'cat-acomp' || catSlug.includes('acomp') || catName.includes('acompanha')) return false;
+    if (catId === 'cat-pao' || catSlug.includes('pao') || catSlug.includes('pão') || catName.includes('pão') || catName.includes('pao') || prodName.startsWith('pão') || prodName.startsWith('pao')) return false;
+    if (catId === 'cat-beirute' || catSlug.includes('beirute') || catName.includes('beirute') || prodName.includes('beirute')) return false;
+    if (catId === 'cat-batata' || catSlug.includes('batata') || catName.includes('batata') || prodName.includes('batata') || prodName.includes('fritas')) return false;
+    if (catId === 'cat-adic' || catSlug.includes('adic') || catName.includes('adicional')) return false;
 
     return catId === 'cat-burguer' ||
+           catId === 'cat-burger' ||
+           catId === 'cat-hamburguer' ||
            catSlug.includes('burguer') ||
+           catSlug.includes('burger') ||
+           catSlug.includes('hamburguer') ||
+           catSlug.includes('hambúrguer') ||
            catSlug.includes('chapa') ||
+           catSlug.includes('lanche') ||
            catName.includes('burguer') ||
+           catName.includes('burger') ||
+           catName.includes('hamburguer') ||
+           catName.includes('hambúrguer') ||
            catName.includes('chapa') ||
+           catName.includes('lanche') ||
            prodName.includes('burguer') ||
-           prodName.includes('burger');
+           prodName.includes('burger') ||
+           prodName.includes('hamburguer') ||
+           prodName.includes('hambúrguer') ||
+           prodName.startsWith('x-') ||
+           prodName.startsWith('x ') ||
+           prodName.includes(' x-') ||
+           prodName.includes(' x ') ||
+           prodName.includes('cheddar') ||
+           prodName.includes('bacon') ||
+           prodDesc.includes('pão bola') ||
+           prodDesc.includes('pao bola') ||
+           prodDesc.includes('burguer') ||
+           prodDesc.includes('burger');
+  }
+
+  function isBurgerProduct(product) {
+    if (!product) return false;
+    const prodNameLower = (product.name || '').toLowerCase().trim();
+    if (product.is_promo && (prodNameLower.includes('combo') || prodNameLower.includes('2 beirute') || prodNameLower.includes('promoção') || prodNameLower.includes('promocao'))) {
+      return false;
+    }
+    return isProductNaBrasa(product) || isProductNaChapa(product);
   }
 
   function openPosItemCustomModal(product) {
@@ -824,16 +864,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const isPromo = Boolean(product.is_promo || isCombo);
-    const basePrice = getProductEffectivePrice(product);
-    const isBurger = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
+    const originalBasePrice = getProductEffectivePrice(product);
+    const isBurger = !isCombo && isBurgerProduct(product);
 
     adminState.posCustomItemState = {
       product,
       isPromo,
       isCombo,
+      isBurger,
       allowedItems,
       requiredQty,
-      basePrice,
+      originalBasePrice,
+      basePrice: originalBasePrice,
       qty: 1,
       selectedOptionals: [],
       comboChoices: {},
@@ -847,22 +889,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     dom.posCustomItemTitle.textContent = `${isPromo ? '🔥 ' : ''}${product.name}`;
     dom.posCustomItemDescription.textContent = product.description || '';
-    dom.posCustomItemBasePrice.textContent = window.formatCurrency(basePrice);
+    dom.posCustomItemBasePrice.textContent = window.formatCurrency(originalBasePrice);
     dom.posCustomItemNotes.value = '';
     dom.posCustomItemQty.textContent = '1';
 
-    // Seção versão hambúrguer (desativada para combos)
+    // Seção versão hambúrguer (Tradicional vs Duplo +R$ 5)
     const burgerSizeSection = document.getElementById('posCustomBurgerSizeSection');
     if (burgerSizeSection) {
       if (isBurger) {
         burgerSizeSection.style.display = 'block';
-        // Reset para tradicional
         const radios = burgerSizeSection.querySelectorAll('input[name="posBurgerSize"]');
-        radios.forEach(r => { r.checked = r.value === 'tradicional'; });
+        const labels = burgerSizeSection.querySelectorAll('label');
+
+        const updateRadioVisual = (val) => {
+          labels.forEach(lbl => {
+            const radio = lbl.querySelector('input');
+            if (radio && radio.value === val) {
+              lbl.style.borderColor = '#ec4899';
+              lbl.style.background = '#fdf2f8';
+              lbl.style.color = '#831843';
+            } else {
+              lbl.style.borderColor = '#cbd5e1';
+              lbl.style.background = '#ffffff';
+              lbl.style.color = '#334155';
+            }
+          });
+        };
+
+        radios.forEach(r => {
+          r.checked = r.value === 'tradicional';
+        });
+        updateRadioVisual('tradicional');
+
         radios.forEach(r => {
           r.onchange = () => {
             adminState.posCustomItemState.burgerVersion = r.value;
-            adminState.posCustomItemState.basePrice = basePrice + (r.value === 'duplo' ? 5 : 0);
+            adminState.posCustomItemState.basePrice = originalBasePrice + (r.value === 'duplo' ? 5 : 0);
+            updateRadioVisual(r.value);
             updateCustomSubtotal();
           };
         });
@@ -1049,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   dom.btnConfirmCustomItem.addEventListener('click', () => {
     if (!adminState.posCustomItemState) return;
 
-    const { product, isPromo, isCombo, basePrice, qty, selectedOptionals, burgerVersion, requiredQty } = adminState.posCustomItemState;
+    const { product, isPromo, isCombo, isBurger, basePrice, qty, selectedOptionals, burgerVersion, requiredQty } = adminState.posCustomItemState;
     const notes = dom.posCustomItemNotes.value.trim();
 
     let comboChoicesList = [];
@@ -1071,13 +1134,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const extraPrice = selectedOptionals.reduce((sum, o) => sum + o.price, 0);
     const unitPrice = basePrice + extraPrice;
 
-    // Nome com versão do hambúrguer
-    const isBurger = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
-    const versionLabel = isBurger && burgerVersion === 'duplo' ? ' (Duplo)' : '';
+    // Nome e versão do hambúrguer
+    const isBurgerItem = Boolean(isBurger);
+    const selectedVersion = isBurgerItem ? (burgerVersion || 'tradicional') : null;
+    const versionLabel = isBurgerItem && selectedVersion === 'duplo' ? ' (Duplo)' : '';
+    const finalName = product.name + versionLabel;
 
     addItemToPosCart({
       id: product.id,
-      name: product.name + versionLabel,
+      name: finalName,
       price: unitPrice,
       quantity: qty,
       subtotal: unitPrice * qty,
@@ -1085,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       notes: notes,
       is_combo: isCombo || isPromo,
       combo_choices: comboChoicesList,
-      burger_version: isBurger ? (burgerVersion || 'tradicional') : null
+      burger_version: selectedVersion
     });
 
     dom.posItemCustomModal.style.display = 'none';
@@ -1098,12 +1163,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   function addItemToPosCart(item) {
     const optKey = (item.optionals || []).map(o => o.name).sort().join('|');
     const comboKey = (item.combo_choices || []).map(c => `${c.qty}x${c.name}`).sort().join('|');
-    const fullKey = `${item.id}_${item.notes || ''}_${optKey}_${comboKey}`;
+    const versionKey = item.burger_version || 'tradicional';
+    const fullKey = `${item.id}_${versionKey}_${item.notes || ''}_${optKey}_${comboKey}`;
 
     const existingIndex = adminState.posCart.findIndex(cartIt => {
       const cOptKey = (cartIt.optionals || []).map(o => o.name).sort().join('|');
       const cComboKey = (cartIt.combo_choices || []).map(c => `${c.qty}x${c.name}`).sort().join('|');
-      const cFullKey = `${cartIt.id}_${cartIt.notes || ''}_${cOptKey}_${cComboKey}`;
+      const cVersionKey = cartIt.burger_version || 'tradicional';
+      const cFullKey = `${cartIt.id}_${cVersionKey}_${cartIt.notes || ''}_${cOptKey}_${cComboKey}`;
       return cFullKey === fullKey;
     });
 
@@ -1138,6 +1205,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (item.combo_choices && item.combo_choices.length > 0) {
         detailsHtml += `<div>Combo: ${item.combo_choices.map(c => `${c.qty}x ${c.name}`).join(', ')}</div>`;
+      }
+      if (item.burger_version === 'duplo') {
+        detailsHtml += `<div style="color: #ec4899; font-weight: 800;">🍔 Versão: DUPLO (+ R$ 5,00)</div>`;
       }
       if (item.optionals && item.optionals.length > 0) {
         detailsHtml += `<div>+ ${item.optionals.map(o => o.name).join(', ')}</div>`;
