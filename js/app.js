@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalQty: 1,
     modalSelectedOptionals: [],
     modalNotes: '',
-    modalComboCounts: {}
+    modalComboCounts: {},
+    modalSelectedFlavor: ''
   };
 
   // Elementos do DOM
@@ -44,6 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     productModalCover: document.getElementById('productModalCover'),
     productModalDesc: document.getElementById('productModalDesc'),
     productModalPrice: document.getElementById('productModalPrice'),
+    productModalFlavorSection: document.getElementById('productModalFlavorSection'),
+    productModalFlavorLabel: document.getElementById('productModalFlavorLabel'),
+    productModalFlavorList: document.getElementById('productModalFlavorList'),
     productModalOptionalsSection: document.getElementById('productModalOptionalsSection'),
     productModalOptionalsList: document.getElementById('productModalOptionalsList'),
     productModalComboSection: document.getElementById('productModalComboSection'),
@@ -440,6 +444,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, { passive: false });
   }
 
+  function isProductAvailableForCurrentChannel(prod) {
+    const channel = prod.sales_channel || 'todos';
+    if (channel === 'todos') return true;
+    const currentDeliveryType = (window.cart && window.cart.deliveryType) ? window.cart.deliveryType : 'delivery';
+    if (currentDeliveryType === 'delivery') {
+      return channel === 'delivery' || channel === 'todos';
+    }
+    if (currentDeliveryType === 'pickup') {
+      return channel === 'local_balcao' || channel === 'todos';
+    }
+    return true;
+  }
+
   function renderMenu() {
     if (!dom.menuSectionsContainer) return;
 
@@ -454,7 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.categories.forEach(cat => {
       if (isCategoryHiddenFromMainMenu(cat)) return;
 
-      let categoryProducts = state.products.filter(p => isProductInCategory(p, cat));
+      let categoryProducts = state.products.filter(p => isProductInCategory(p, cat) && isProductAvailableForCurrentChannel(p));
 
       // Filtro de busca por nome, descrição ou categoria
       if (query) {
@@ -576,6 +593,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.modalSelectedOptionals = [];
     state.modalNotes = '';
     state.modalComboCounts = {};
+    state.modalSelectedFlavor = '';
     state.modalBurgerVersion = 'tradicional'; // padrão
 
     dom.productModalTitle.textContent = product.name;
@@ -589,11 +607,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchedPromo = (state.promotions || []).find(p => p.id === product.promo_id);
     const isCombo3Burguers = product.name.toLowerCase().includes('combo 3') || (product.promo_id === 'promo-1');
     const isPromo2Beirutes = product.name.toLowerCase().includes('2 beirute') || (product.promo_id === 'promo-2');
-    const isCombo = Boolean(isCombo3Burguers || isPromo2Beirutes || (matchedPromo && matchedPromo.allowed_items?.length > 0) || (product.allowed_items && product.allowed_items.length > 0));
+
+    // Identificação de Customização Dinâmica
+    const hasCustomConfig = Array.isArray(product.customization_options) && product.customization_options.length > 0;
+    const isExplicitFlavor = product.customization_type === 'flavors';
+    const isExplicitSelection = product.customization_type === 'selection';
+
+    const isFlavor = isExplicitFlavor || (hasCustomConfig && (product.customization_max_qty === 1 || !product.customization_max_qty) && !isExplicitSelection);
+    const isCombo = isExplicitSelection || (hasCustomConfig && product.customization_max_qty > 1) || isCombo3Burguers || isPromo2Beirutes || (matchedPromo && matchedPromo.allowed_items?.length > 0) || (product.allowed_items && product.allowed_items.length > 0);
 
     // Seção de tamanho do hambúrguer (Tradicional vs Duplo)
     const burgerSizeSection = document.getElementById('productModalBurgerSizeSection');
-    const isBurguer = !isCombo && (isProductNaBrasa(product) || isProductNaChapa(product));
+    const isBurguer = !isCombo && !isFlavor && (isProductNaBrasa(product) || isProductNaChapa(product));
 
     if (burgerSizeSection) {
       if (isBurguer) {
@@ -620,6 +645,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
+    // Seção de Sabores Únicos (ex: Sucos)
+    if (isFlavor && hasCustomConfig) {
+      if (dom.productModalFlavorSection) {
+        dom.productModalFlavorSection.style.display = 'block';
+        renderFlavorsList(product.customization_options, product.customization_label || 'Escolha o Sabor');
+      }
+    } else {
+      if (dom.productModalFlavorSection) {
+        dom.productModalFlavorSection.style.display = 'none';
+      }
+    }
+
     if (isCombo) {
       dom.productModalOptionalsSection.style.display = 'none';
       dom.productModalComboSection.style.display = 'block';
@@ -627,7 +664,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       let allowedItems = [];
       let requiredQty = 3;
 
-      if (matchedPromo && matchedPromo.allowed_items?.length > 0) {
+      if (hasCustomConfig) {
+        allowedItems = product.customization_options;
+        requiredQty = Number(product.customization_max_qty) || 3;
+      } else if (matchedPromo && matchedPromo.allowed_items?.length > 0) {
         allowedItems = matchedPromo.allowed_items;
         requiredQty = matchedPromo.required_quantity || 3;
       } else if (product.allowed_items && product.allowed_items.length > 0) {
@@ -667,6 +707,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     dom.productModal.style.display = 'flex';
+  }
+
+  function renderFlavorsList(allowedItems, label = 'Escolha o Sabor') {
+    if (!dom.productModalFlavorList) return;
+    if (dom.productModalFlavorLabel) {
+      dom.productModalFlavorLabel.textContent = label;
+    }
+    const escape = window.escapeHtml || (s => s);
+    let html = '';
+    state.modalSelectedFlavor = allowedItems[0] || '';
+
+    allowedItems.forEach((flv, idx) => {
+      const isSelected = idx === 0;
+      html += `
+        <div class="optional-row ${isSelected ? 'selected' : ''}" data-flavor="${escape(flv)}" style="cursor: pointer;">
+          <div class="optional-left">
+            <div class="fake-checkbox" style="border-radius: 50%;">✓</div>
+            <span class="optional-title-text">${escape(flv)}</span>
+          </div>
+          <span class="optional-price-tag" style="color: #22c55e;">Opção</span>
+        </div>
+      `;
+    });
+
+    dom.productModalFlavorList.innerHTML = html;
+
+    dom.productModalFlavorList.querySelectorAll('.optional-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const flv = row.getAttribute('data-flavor');
+        state.modalSelectedFlavor = flv;
+        dom.productModalFlavorList.querySelectorAll('.optional-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+      });
+    });
   }
 
   function renderOptionalsList(product) {
@@ -836,12 +910,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.cart.items.forEach(item => {
           let customDetails = '';
 
+          if (item.flavor) {
+            customDetails += `<div><strong>🥤 Sabor:</strong> ${escape(item.flavor.toUpperCase())}</div>`;
+          }
+
           if (item.is_combo && item.combo_choices && item.combo_choices.length > 0) {
             const choicesStr = item.combo_choices
               .filter(c => c.qty > 0)
               .map(c => `${escape(c.qty)}x ${escape(c.name)}`)
               .join(', ');
-            customDetails += `<div><strong>Escolhas:</strong> ${choicesStr}</div>`;
+            if (choicesStr) {
+              customDetails += `<div><strong>🍔 Escolhas:</strong> ${choicesStr}</div>`;
+            }
           }
 
           if (item.optionals && item.optionals.length > 0) {
@@ -1337,12 +1417,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.btnModalAddToCart.addEventListener('click', () => {
         if (!state.currentModalProduct) return;
 
+        const matchedPromo = (state.promotions || []).find(p => p.id === state.currentModalProduct.promo_id);
         const isCombo3 = state.currentModalProduct.name.toLowerCase().includes('combo 3') || (state.currentModalProduct.promo_id === 'promo-1');
         const isCombo2 = state.currentModalProduct.name.toLowerCase().includes('2 beirute') || (state.currentModalProduct.promo_id === 'promo-2');
+        const hasCustomConfig = Array.isArray(state.currentModalProduct.customization_options) && state.currentModalProduct.customization_options.length > 0;
+        const isExplicitSelection = state.currentModalProduct.customization_type === 'selection';
+        const isExplicitFlavor = state.currentModalProduct.customization_type === 'flavors';
+        const isFlavor = isExplicitFlavor || (hasCustomConfig && (state.currentModalProduct.customization_max_qty === 1 || !state.currentModalProduct.customization_max_qty) && !isExplicitSelection);
+        const isCombo = isExplicitSelection || (hasCustomConfig && state.currentModalProduct.customization_max_qty > 1) || isCombo3 || isCombo2 || (matchedPromo && matchedPromo.allowed_items?.length > 0) || (state.currentModalProduct.allowed_items && state.currentModalProduct.allowed_items.length > 0);
+
+        if (isFlavor && hasCustomConfig && !state.modalSelectedFlavor) {
+          alert('Por favor, selecione um sabor antes de adicionar.');
+          return;
+        }
 
         let comboChoices = [];
-        if (isCombo3 || isCombo2) {
-          const req = isCombo3 ? 3 : 2;
+        if (isCombo) {
+          const req = (hasCustomConfig && state.currentModalProduct.customization_max_qty) ? Number(state.currentModalProduct.customization_max_qty) : (isCombo3 ? 3 : (isCombo2 ? 2 : (matchedPromo?.required_quantity || 3)));
           const sum = Object.values(state.modalComboCounts).reduce((a, b) => a + b, 0);
           if (sum !== req) {
             alert(`Por favor, selecione exatamente ${req} itens para esta promoção.`);
@@ -1355,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const effectivePrice = getProductEffectivePrice(state.currentModalProduct);
         const burgerExtra = (state.modalBurgerVersion === 'duplo') ? 5 : 0;
-        const isBurguer = isProductNaBrasa(state.currentModalProduct) || isProductNaChapa(state.currentModalProduct);
+        const isBurguer = !isCombo && !isFlavor && (isProductNaBrasa(state.currentModalProduct) || isProductNaChapa(state.currentModalProduct));
         const versionLabel = isBurguer && state.modalBurgerVersion === 'duplo' ? ' (Duplo)' : '';
 
         const productToAdd = {
@@ -1370,7 +1461,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           state.modalQty,
           state.modalSelectedOptionals,
           notes,
-          comboChoices
+          comboChoices,
+          isFlavor ? state.modalSelectedFlavor : ''
         );
 
         closeProductModal();
@@ -1385,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dom.deliveryAddressFields.style.display = 'block';
         dom.pickupAddressNotice.style.display = 'none';
         window.cart.setDeliveryType('delivery');
+        renderMenu();
         updateCheckoutTotals();
       });
     }
@@ -1396,6 +1489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dom.deliveryAddressFields.style.display = 'none';
         dom.pickupAddressNotice.style.display = 'block';
         window.cart.setDeliveryType('pickup');
+        renderMenu();
         updateCheckoutTotals();
       });
     }

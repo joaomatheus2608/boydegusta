@@ -271,6 +271,12 @@ exports.handler = async function(event) {
         promo_price: (prod.promo_price !== null && prod.promo_price !== undefined && prod.promo_price !== '') ? Number(prod.promo_price) : null,
         promo_label: prod.promo_label ? String(prod.promo_label).trim() : null,
         monday_price: (prod.monday_price !== null && prod.monday_price !== undefined && prod.monday_price !== '') ? Number(prod.monday_price) : null,
+        sales_channel: prod.sales_channel ? String(prod.sales_channel).trim() : 'todos',
+        customization_type: prod.customization_type ? String(prod.customization_type).trim() : 'none',
+        customization_label: prod.customization_label ? String(prod.customization_label).trim() : null,
+        customization_max_qty: (prod.customization_max_qty !== null && prod.customization_max_qty !== undefined && prod.customization_max_qty !== '') ? Number(prod.customization_max_qty) : 1,
+        customization_min_qty: (prod.customization_min_qty !== null && prod.customization_min_qty !== undefined && prod.customization_min_qty !== '') ? Number(prod.customization_min_qty) : 1,
+        customization_options: Array.isArray(prod.customization_options) ? prod.customization_options : [],
         order_index: Number(prod.order_index) || 0,
         updated_at: new Date().toISOString()
       };

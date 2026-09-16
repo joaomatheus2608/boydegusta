@@ -799,10 +799,17 @@
           Preço Base: <span id="posCustomItemBasePrice">R$ 0,00</span>
         </div>
 
-        <!-- Seção de Escolha de Combo (se for promoção) -->
+        <!-- Seção de Escolha de Sabor Único (ex: Sucos) -->
+        <div id="posCustomFlavorSection"
+          style="display: none; margin-bottom: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px;">
+          <h4 id="posCustomFlavorTitle" style="font-size: 0.88rem; font-weight: 700; color: #166534; margin-bottom: 8px;">Escolha o Sabor:</h4>
+          <div id="posCustomFlavorChoices" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
+
+        <!-- Seção de Escolha de Combo / Seleção Múltipla -->
         <div id="posCustomComboSection"
           style="display: none; margin-bottom: 16px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 12px;">
-          <h4 style="font-size: 0.88rem; color: #92400e; margin-bottom: 8px;">Escolha os lanches do combo:</h4>
+          <h4 id="posCustomComboTitle" style="font-size: 0.88rem; color: #92400e; margin-bottom: 8px;">Escolha os lanches do combo:</h4>
           <div id="posCustomComboChoices"></div>
         </div>
 
@@ -993,6 +1000,17 @@
             </div>
           </div>
 
+          <div class="form-field-group">
+            <label class="form-field-label">Disponibilidade por Canal de Venda</label>
+            <select id="editProdSalesChannel" class="form-text-input">
+              <option value="todos">Disponível em Todos (Salão, Balcão e Delivery)</option>
+              <option value="local_balcao">Apenas no Salão / Mesas e Balcão (Não sai no Delivery)</option>
+              <option value="delivery">Apenas no Delivery</option>
+              <option value="mesa">Apenas no Salão / Mesas</option>
+            </select>
+            <span style="font-size: 0.73rem; color: #64748b; margin-top: 4px; display: block;">Ex: Sucos naturais podem ser restritos apenas para Salão/Balcão.</span>
+          </div>
+
           <!-- Promoção por Dia da Semana no Produto -->
           <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 14px; margin-top: 14px; margin-bottom: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -1038,6 +1056,40 @@
                   </label>
                 </div>
                 <span style="font-size: 0.73rem; color: #92400e; margin-top: 4px; display: block;">No dia configurado, o preço muda automaticamente no cardápio e no PDV.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seleção de Sabores / Combos Personalizados -->
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-top: 14px; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <label style="font-weight: 800; font-size: 0.9rem; color: #166534; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="editProdHasCustomization" />
+                <span>🥤 / 🍔 Opções de Sabores ou Seleção de Itens (Combos)</span>
+              </label>
+            </div>
+            <div id="editProdCustomizationFields" style="display: none;">
+              <div class="form-cols-2">
+                <div class="form-field-group">
+                  <label class="form-field-label">Tipo de Escolha *</label>
+                  <select id="editProdCustomType" class="form-text-input">
+                    <option value="flavors">Sabores (Escolha Única - ex: Graviola, Cajá, Maracujá)</option>
+                    <option value="selection">Seleção / Combo (Múltipla Escolha com limite - ex: 3 Hambúrgueres)</option>
+                  </select>
+                </div>
+                <div class="form-field-group" id="editProdCustomMaxQtyGroup" style="display: none;">
+                  <label class="form-field-label">Quantidade Máxima de Escolhas *</label>
+                  <input type="number" id="editProdCustomMaxQty" class="form-text-input" placeholder="Ex: 3" value="1" min="1" />
+                </div>
+              </div>
+              <div class="form-field-group">
+                <label class="form-field-label">Título da Escolha (Opcional)</label>
+                <input type="text" id="editProdCustomLabel" class="form-text-input" placeholder="Ex: Escolha o sabor do suco ou Escolha seus 3 hambúrgueres" />
+              </div>
+              <div class="form-field-group" style="margin-bottom: 0;">
+                <label class="form-field-label">Opções Disponíveis (1 opção por linha) *</label>
+                <textarea id="editProdCustomOptions" class="notes-input-box" rows="5" placeholder="Exemplo:&#10;Graviola&#10;Cajá&#10;Maracujá&#10;Acerola&#10;Goiaba"></textarea>
+                <span style="font-size: 0.73rem; color: #166534; margin-top: 4px; display: block;">Digite cada sabor ou lanche em uma linha separada. O sistema criará os seletores automaticamente no PDV, Mesas e Cardápio, e imprimirá com destaque para a cozinha.</span>
               </div>
             </div>
           </div>
@@ -1556,11 +1608,11 @@
     </div>
   </div>
   <!-- Scripts Vanilla JS -->
-  <script src="js/config.js?v=2.2.4"></script>
-  <script src="js/seedData.js?v=2.2.4"></script>
-  <script src="js/db.js?v=2.2.4"></script>
-  <script src="js/auth.js?v=2.2.4"></script>
-  <script src="js/admin.js?v=2.2.4"></script>
+  <script src="js/config.js?v=2.3.0"></script>
+  <script src="js/seedData.js?v=2.3.0"></script>
+  <script src="js/db.js?v=2.3.0"></script>
+  <script src="js/auth.js?v=2.3.0"></script>
+  <script src="js/admin.js?v=2.3.0"></script>
 </body>
 
 </html>

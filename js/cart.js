@@ -32,7 +32,7 @@
       window.dispatchEvent(new CustomEvent('cart:updated', { detail: this }));
     },
 
-    addItem(product, quantity = 1, optionals = [], notes = '', comboChoices = []) {
+    addItem(product, quantity = 1, optionals = [], notes = '', comboChoices = [], flavor = '') {
       const itemPrice = Number(product.price) || 0;
       const optionalsPrice = optionals.reduce((sum, opt) => sum + (Number(opt.price) || 0), 0);
       const unitTotal = itemPrice + optionalsPrice;
@@ -49,8 +49,9 @@
         subtotal: unitTotal * (Number(quantity) || 1),
         optionals: optionals || [],
         notes: notes ? notes.trim() : '',
-        is_combo: Boolean(product.is_promo || product.promo_id),
-        combo_choices: comboChoices || []
+        is_combo: Boolean(product.is_promo || product.promo_id || (comboChoices && comboChoices.length > 0)),
+        combo_choices: comboChoices || [],
+        flavor: flavor || product.flavor || ''
       };
 
       this.items.push(cartItem);
@@ -143,6 +144,10 @@
       let itemsListText = '';
       this.items.forEach(item => {
         itemsListText += `${item.quantity}x ${item.name} — ${window.formatCurrency(item.unitTotal * item.quantity)}\n`;
+
+        if (item.flavor) {
+          itemsListText += `  • SABOR: ${item.flavor.toUpperCase()}\n`;
+        }
 
         if (item.is_combo && item.combo_choices && item.combo_choices.length > 0) {
           item.combo_choices.forEach(choice => {
