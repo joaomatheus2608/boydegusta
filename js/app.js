@@ -260,37 +260,98 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function isProductNaBrasa(product) {
     if (!product) return false;
-    const catId = product.category_id || '';
-    const cat = (state.categories || []).find(c => c.id === catId);
+    const catId = (product.category_id || '').toLowerCase();
+    const cat = (state.categories || []).find(c => c.id === product.category_id);
     const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
     const catName = cat ? (cat.name || '').toLowerCase() : '';
     const prodName = (product.name || '').toLowerCase();
     const prodDesc = (product.description || '').toLowerCase();
 
+    const norm = str => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normCatSlug = norm(catSlug);
+    const normCatName = norm(catName);
+    const normProdName = norm(prodName);
+    const normProdDesc = norm(prodDesc);
+
     return catId === 'cat-brasa' ||
-           catSlug.includes('brasa') ||
-           catName.includes('brasa') ||
-           prodName.includes('brasa') ||
-           prodDesc.includes('na brasa') ||
-           prodDesc.includes('burguer na brasa');
+           normCatSlug.includes('brasa') ||
+           normCatName.includes('brasa') ||
+           normProdName.includes('brasa') ||
+           normProdDesc.includes('na brasa') ||
+           normProdDesc.includes('burguer na brasa') ||
+           normProdDesc.includes('burger na brasa');
   }
 
   function isProductNaChapa(product) {
     if (!product) return false;
     if (isProductNaBrasa(product)) return false;
-    const catId = product.category_id || '';
-    const cat = (state.categories || []).find(c => c.id === catId);
+    const catId = (product.category_id || '').toLowerCase();
+    const cat = (state.categories || []).find(c => c.id === product.category_id);
     const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
     const catName = cat ? (cat.name || '').toLowerCase() : '';
     const prodName = (product.name || '').toLowerCase();
+    const prodDesc = (product.description || '').toLowerCase();
+
+    const norm = str => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normCatSlug = norm(catSlug);
+    const normCatName = norm(catName);
+    const normProdName = norm(prodName);
+    const normProdDesc = norm(prodDesc);
+
+    // Excluir explicitamente categorias que não são hambúrguer
+    if (catId === 'cat-bebidas' || normCatSlug.includes('bebida') || normCatName.includes('bebida') || normCatSlug.includes('suco') || normCatName.includes('suco')) return false;
+    if (catId === 'cat-acomp' || normCatSlug.includes('acomp') || normCatName.includes('acompanha')) return false;
+    if (catId === 'cat-pao' || normCatSlug.includes('pao') || normCatName.includes('pao') || normProdName.startsWith('pao')) return false;
+    if (catId === 'cat-beirute' || normCatSlug.includes('beirute') || normCatName.includes('beirute') || normProdName.includes('beirute')) return false;
+    if (catId === 'cat-batata' || normCatSlug.includes('batata') || normCatName.includes('batata') || normProdName.includes('batata') || normProdName.includes('fritas')) return false;
+    if (catId === 'cat-adic' || normCatSlug.includes('adic') || normCatName.includes('adicional')) return false;
 
     return catId === 'cat-burguer' ||
-           catSlug.includes('burguer') ||
-           catSlug.includes('chapa') ||
-           catName.includes('burguer') ||
-           catName.includes('chapa') ||
-           prodName.includes('burguer') ||
-           prodName.includes('burger');
+           catId === 'cat-burger' ||
+           catId === 'cat-hamburguer' ||
+           normCatSlug.includes('burguer') ||
+           normCatSlug.includes('burger') ||
+           normCatSlug.includes('hamburguer') ||
+           normCatSlug.includes('hamburger') ||
+           normCatSlug.includes('chapa') ||
+           normCatSlug.includes('smash') ||
+           normCatSlug.includes('sanduiche') ||
+           normCatSlug.includes('lanche') ||
+           normCatName.includes('burguer') ||
+           normCatName.includes('burger') ||
+           normCatName.includes('hamburguer') ||
+           normCatName.includes('hamburger') ||
+           normCatName.includes('chapa') ||
+           normCatName.includes('smash') ||
+           normCatName.includes('sanduiche') ||
+           normCatName.includes('lanche') ||
+           normProdName.includes('burguer') ||
+           normProdName.includes('burger') ||
+           normProdName.includes('hamburguer') ||
+           normProdName.includes('hamburger') ||
+           normProdName.includes('smash') ||
+           normProdName.includes('cheddar') ||
+           normProdName.includes('bacon') ||
+           normProdName.startsWith('x-') ||
+           normProdName.startsWith('x ') ||
+           normProdName.includes(' x-') ||
+           normProdName.includes(' x ') ||
+           normProdDesc.includes('pao brioche') ||
+           normProdDesc.includes('pao australiano') ||
+           normProdDesc.includes('pao bola') ||
+           normProdDesc.includes('burguer') ||
+           normProdDesc.includes('burger') ||
+           normProdDesc.includes('hamburguer') ||
+           normProdDesc.includes('blend');
+  }
+
+  function isBurgerProduct(product) {
+    if (!product) return false;
+    const prodNameLower = (product.name || '').toLowerCase().trim();
+    if (product.is_promo && (prodNameLower.includes('combo') || prodNameLower.includes('2 beirute') || prodNameLower.includes('promocao') || prodNameLower.includes('promoção'))) {
+      return false;
+    }
+    return isProductNaBrasa(product) || isProductNaChapa(product);
   }
 
   function getFilteredOptionalsForProduct(product) {
@@ -623,22 +684,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (burgerSizeSection) {
       if (isBurguer) {
         burgerSizeSection.style.display = 'block';
-        // Reset para tradicional
+        state.modalBurgerVersion = 'tradicional';
         const radios = burgerSizeSection.querySelectorAll('input[name="modalBurgerSize"]');
-        radios.forEach(r => { r.checked = r.value === 'tradicional'; });
-        // Atualiza visual das pills
         const pillTradicional = document.getElementById('sizeOptTradicional');
         const pillDuplo = document.getElementById('sizeOptDuplo');
-        if (pillTradicional) { pillTradicional.style.borderColor = 'var(--primary-yellow)'; pillTradicional.style.background = 'rgba(255,255,255,0.06)'; }
-        if (pillDuplo) { pillDuplo.style.borderColor = 'rgba(255,255,255,0.15)'; pillDuplo.style.background = 'rgba(255,255,255,0.04)'; }
-        radios.forEach(r => {
-          r.onchange = () => {
-            state.modalBurgerVersion = r.value;
-            // Atualiza visual das pills
-            if (pillTradicional) { pillTradicional.style.borderColor = r.value === 'tradicional' ? 'var(--primary-yellow)' : 'rgba(255,255,255,0.15)'; }
-            if (pillDuplo) { pillDuplo.style.borderColor = r.value === 'duplo' ? 'var(--primary-yellow)' : 'rgba(255,255,255,0.15)'; }
-            updateModalDynamicPrice();
+
+        const setBurgerSize = (val) => {
+          state.modalBurgerVersion = val;
+          radios.forEach(r => { r.checked = r.value === val; });
+          if (pillTradicional) {
+            pillTradicional.style.borderColor = val === 'tradicional' ? 'var(--primary-yellow)' : 'rgba(255,255,255,0.15)';
+            pillTradicional.style.background = val === 'tradicional' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)';
+          }
+          if (pillDuplo) {
+            pillDuplo.style.borderColor = val === 'duplo' ? 'var(--primary-yellow)' : 'rgba(255,255,255,0.15)';
+            pillDuplo.style.background = val === 'duplo' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)';
+          }
+          updateModalDynamicPrice();
+        };
+
+        setBurgerSize('tradicional');
+
+        if (pillTradicional) {
+          pillTradicional.onclick = (e) => {
+            e.preventDefault();
+            setBurgerSize('tradicional');
           };
+        }
+        if (pillDuplo) {
+          pillDuplo.onclick = (e) => {
+            e.preventDefault();
+            setBurgerSize('duplo');
+          };
+        }
+        radios.forEach(r => {
+          r.onchange = () => { setBurgerSize(r.value); };
         });
       } else {
         burgerSizeSection.style.display = 'none';
@@ -909,6 +989,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const escape = window.escapeHtml || (s => s);
         window.cart.items.forEach(item => {
           let customDetails = '';
+
+          if (item.burger_version === 'duplo' || (item.name && item.name.includes('(Duplo)'))) {
+            customDetails += `<div style="color: #ec4899; font-weight: 800;">🍔 Versão: DUPLO (+ R$ 5,00)</div>`;
+          }
 
           if (item.flavor) {
             customDetails += `<div><strong>🥤 Sabor:</strong> ${escape(item.flavor.toUpperCase())}</div>`;
@@ -1445,9 +1529,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const effectivePrice = getProductEffectivePrice(state.currentModalProduct);
-        const burgerExtra = (state.modalBurgerVersion === 'duplo') ? 5 : 0;
         const isBurguer = !isCombo && !isFlavor && (isProductNaBrasa(state.currentModalProduct) || isProductNaChapa(state.currentModalProduct));
-        const versionLabel = isBurguer && state.modalBurgerVersion === 'duplo' ? ' (Duplo)' : '';
+        const isDuplo = isBurguer && state.modalBurgerVersion === 'duplo';
+        const burgerExtra = isDuplo ? 5 : 0;
+        const versionLabel = isDuplo ? ' (Duplo)' : '';
 
         const productToAdd = {
           ...state.currentModalProduct,

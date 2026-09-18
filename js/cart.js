@@ -51,7 +51,8 @@
         notes: notes ? notes.trim() : '',
         is_combo: Boolean(product.is_promo || product.promo_id || (comboChoices && comboChoices.length > 0)),
         combo_choices: comboChoices || [],
-        flavor: flavor || product.flavor || ''
+        flavor: flavor || product.flavor || '',
+        burger_version: product.burger_version || (product.name && product.name.includes('(Duplo)') ? 'duplo' : '')
       };
 
       this.items.push(cartItem);
@@ -144,6 +145,10 @@
       let itemsListText = '';
       this.items.forEach(item => {
         itemsListText += `${item.quantity}x ${item.name} — ${window.formatCurrency(item.unitTotal * item.quantity)}\n`;
+
+        if (item.burger_version === 'duplo' || (item.name && item.name.includes('(Duplo)'))) {
+          itemsListText += `  • VERSÃO: DUPLO (2x Carnes)\n`;
+        }
 
         if (item.flavor) {
           itemsListText += `  • SABOR: ${item.flavor.toUpperCase()}\n`;
