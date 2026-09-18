@@ -592,10 +592,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           }
 
+          const optimizedImgUrl = window.optimizeImageUrl ? window.optimizeImageUrl(prod.image_url, { width: 450, quality: 75 }) : (prod.image_url || 'boylogo.jpg');
           html += `
             <div class="food-card ${isUnavailable ? 'card-unavailable' : ''}" data-product-id="${prod.id}">
               <div class="food-card-img-box">
-                <img class="food-card-img" src="${prod.image_url || 'boylogo.jpg'}" alt="${prod.name}" loading="lazy" />
+                <img class="food-card-img" src="${optimizedImgUrl}" alt="${prod.name}" loading="lazy" />
                 ${promoBadgeHtml}
               </div>
               <div class="food-card-content">
@@ -658,7 +659,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.modalBurgerVersion = 'tradicional'; // padrão
 
     dom.productModalTitle.textContent = product.name;
-    dom.productModalCover.src = product.image_url || 'boylogo.jpg';
+    const modalImgUrl = window.optimizeImageUrl ? window.optimizeImageUrl(product.image_url, { width: 700, quality: 80 }) : (product.image_url || 'boylogo.jpg');
+    dom.productModalCover.src = modalImgUrl;
     dom.productModalCover.alt = product.name;
     dom.productModalDesc.textContent = product.description || '';
     dom.productModalQtyVal.textContent = '1';

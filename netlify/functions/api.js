@@ -56,6 +56,7 @@ async function uploadToStorage(base64Data, fileName, mimeType) {
       'apikey': SUPABASE_SERVICE_KEY,
       'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
       'Content-Type': mimeType || 'image/jpeg',
+      'cache-control': '31536000',
       'x-upsert': 'true'
     },
     body: buffer

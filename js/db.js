@@ -97,23 +97,77 @@
   const db = {
 
     // ----------------------------------------
-    // UPLOAD DE IMAGEM (via servidor)
+    // UPLOAD & COMPRESSÃO DE IMAGEM
     // ----------------------------------------
+    // Reduz fotos pesadas de celulares (5MB-10MB) para ~50KB em WebP/JPEG
+    async compressImageFile(file, maxWidth = 800, maxHeight = 800, quality = 0.8) {
+      return new Promise((resolve) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+          return resolve(null);
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth || height > maxHeight) {
+              if (width > height) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Exporta preferencialmente em WebP (90% menor) com fallback para JPEG
+            let dataUrl = canvas.toDataURL('image/webp', quality);
+            let mimeType = 'image/webp';
+            let ext = 'webp';
+
+            if (!dataUrl.startsWith('data:image/webp')) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+              mimeType = 'image/jpeg';
+              ext = 'jpg';
+            }
+
+            const base64 = dataUrl.split(',')[1];
+            resolve({ base64, mimeType, ext });
+          };
+          img.onerror = () => {
+            const base64 = (e.target.result || '').split(',')[1];
+            resolve({ base64, mimeType: file.type || 'image/jpeg', ext: 'jpg' });
+          };
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+    },
+
     async uploadImage(file) {
       if (!file) return null;
       try {
-        const reader = new FileReader();
-        const base64 = await new Promise((resolve, reject) => {
-          reader.onload = e => resolve(e.target.result.split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+        const compressed = await this.compressImageFile(file, 800, 800, 0.8);
+        if (!compressed || !compressed.base64) return null;
+
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${compressed.ext}`;
+        const result = await api('upload-image', 'POST', {
+          base64: compressed.base64,
+          fileName,
+          mimeType: compressed.mimeType
         });
-        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const result = await api('upload-image', 'POST', { base64, fileName, mimeType: file.type || 'image/jpeg' });
         return result?.url || null;
       } catch (e) {
-        console.warn('Erro ao subir imagem:', e);
+        console.warn('Erro ao subir imagem otimizada:', e);
         return null;
       }
     },

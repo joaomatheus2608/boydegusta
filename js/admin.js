@@ -2422,10 +2422,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
       }
 
+      const thumbUrl = window.optimizeImageUrl ? window.optimizeImageUrl(p.image_url, { width: 120, quality: 70 }) : (p.image_url || 'boylogo.jpg');
       rowsHtml += `
         <tr>
           <td>
-            <img class="table-img-thumb" src="${p.image_url || 'boylogo.jpg'}" alt="${window.escapeHtml(p.name)}" />
+            <img class="table-img-thumb" src="${thumbUrl}" alt="${window.escapeHtml(p.name)}" loading="lazy" />
           </td>
           <td>
             <strong>${window.escapeHtml(p.name)}</strong>

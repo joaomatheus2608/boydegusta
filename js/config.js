@@ -92,3 +92,27 @@ window.getProductEffectivePrice = function(product, todayDay) {
   return regularPrice > 0 ? regularPrice : (promoPrice > 0 ? promoPrice : 0);
 };
 
+// Otimiza URLs de imagens para formato WebP ultraleve via CDN Cloudflare (wsrv.nl)
+// Reduz o tráfego do Supabase Storage em até 99% sem precisar re-salvar produtos
+window.optimizeImageUrl = function(url, options = {}) {
+  if (!url || typeof url !== 'string') return 'boylogo.jpg';
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === 'boylogo.jpg') return 'boylogo.jpg';
+
+  // Se for base64 ou imagem local relativa/absoluta simples
+  if (trimmed.startsWith('data:image') || trimmed.startsWith('/') || trimmed.startsWith('./') || (!trimmed.startsWith('http://') && !trimmed.startsWith('https://'))) {
+    return trimmed;
+  }
+
+  // Se já for uma URL otimizada pelo wsrv.nl, retorna diretamente
+  if (trimmed.includes('wsrv.nl')) return trimmed;
+
+  const width = options.width || 600;
+  const quality = options.quality || 80;
+  const format = options.format || 'webp';
+
+  // Redireciona através da CDN global Cloudflare (wsrv.nl) com compressão WebP
+  return `https://wsrv.nl/?url=${encodeURIComponent(trimmed)}&w=${width}&q=${quality}&output=${format}&we=1`;
+};
+
+
