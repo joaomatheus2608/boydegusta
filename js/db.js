@@ -502,24 +502,70 @@
     // 8. BAIRROS E TAXAS
     // ----------------------------------------
     async getNeighborhoods() {
+      let remote = [];
       try {
         const result = await api('get-neighborhoods', 'GET');
         if (result && Array.isArray(result.data)) {
-          if (result.data.length > 0) {
-            setStored(STORAGE_KEYS.NEIGHBORHOODS, result.data);
-            return result.data;
-          }
+          remote = result.data;
         }
       } catch (e) {
         console.warn('Erro ao buscar bairros via API:', e);
       }
+
+      const seed = window.INITIAL_NEIGHBORHOODS || [];
       const local = getStored(STORAGE_KEYS.NEIGHBORHOODS, []);
-      if (!local || local.length === 0) {
-        const seed = window.INITIAL_NEIGHBORHOODS || [];
-        setStored(STORAGE_KEYS.NEIGHBORHOODS, seed);
-        return seed;
+
+      // Mescla todos os bairros: padrões (seed), locais e remotos (Supabase)
+      const mergedMap = new Map();
+
+      seed.forEach(n => {
+        const key = (n.name || '').trim().toLowerCase();
+        if (key) mergedMap.set(key, { ...n });
+      });
+
+      local.forEach(n => {
+        const key = (n.name || '').trim().toLowerCase();
+        if (key) {
+          const existing = mergedMap.get(key) || {};
+          mergedMap.set(key, { ...existing, ...n });
+        }
+      });
+
+      remote.forEach(n => {
+        const key = (n.name || '').trim().toLowerCase();
+        if (key) {
+          const existing = mergedMap.get(key) || {};
+          mergedMap.set(key, { ...existing, ...n });
+        }
+      });
+
+      const merged = Array.from(mergedMap.values()).sort((a, b) => 
+        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+      );
+
+      setStored(STORAGE_KEYS.NEIGHBORHOODS, merged);
+
+      // Se o Supabase ainda não tem os 24 bairros padrões, faz o sync em background
+      if (remote.length < 5 && seed.length > 0) {
+        this.seedInitialNeighborhoodsToSupabase(seed, remote).catch(() => {});
       }
-      return local;
+
+      return merged;
+    },
+
+    async seedInitialNeighborhoodsToSupabase(seedList, currentRemote) {
+      const existingNames = new Set((currentRemote || []).map(r => (r.name || '').trim().toLowerCase()));
+      const toInsert = seedList.filter(s => !existingNames.has((s.name || '').trim().toLowerCase()));
+      for (const s of toInsert) {
+        try {
+          await api('save-neighborhood', 'POST', {
+            name: s.name,
+            delivery_fee: Number(s.delivery_fee) || 0,
+            delivery_time_min: Number(s.delivery_time_min) || 60,
+            is_active: s.is_active !== false
+          });
+        } catch {}
+      }
     },
 
     async saveNeighborhood(neighborhood) {
@@ -567,22 +613,42 @@
     // 9. ENTREGADORES
     // ----------------------------------------
     async getCouriers() {
+      let remote = [];
       try {
         const result = await api('get-couriers', 'GET');
-        if (result.data && result.data.length > 0) {
-          setStored(STORAGE_KEYS.COURIERS, result.data);
-          return result.data;
+        if (result && Array.isArray(result.data)) {
+          remote = result.data;
         }
       } catch (e) {
         console.warn('Erro ao buscar entregadores via API:', e);
       }
+
+      const seed = window.INITIAL_COURIERS || [];
       const local = getStored(STORAGE_KEYS.COURIERS, []);
-      if (!local || local.length === 0) {
-        const seed = window.INITIAL_COURIERS || [];
-        setStored(STORAGE_KEYS.COURIERS, seed);
-        return seed;
-      }
-      return local;
+
+      const mergedMap = new Map();
+      seed.forEach(c => {
+        const key = (c.name || '').trim().toLowerCase();
+        if (key) mergedMap.set(key, { ...c });
+      });
+      local.forEach(c => {
+        const key = (c.name || '').trim().toLowerCase();
+        if (key) {
+          const existing = mergedMap.get(key) || {};
+          mergedMap.set(key, { ...existing, ...c });
+        }
+      });
+      remote.forEach(c => {
+        const key = (c.name || '').trim().toLowerCase();
+        if (key) {
+          const existing = mergedMap.get(key) || {};
+          mergedMap.set(key, { ...existing, ...c });
+        }
+      });
+
+      const merged = Array.from(mergedMap.values());
+      setStored(STORAGE_KEYS.COURIERS, merged);
+      return merged;
     },
 
     async saveCourier(courier) {
