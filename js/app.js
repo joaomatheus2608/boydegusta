@@ -128,13 +128,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   async function init() {
     try {
-      const [settings, hours, cats, prods, opts, promos] = await Promise.all([
+      const [settings, hours, cats, prods, opts, promos, neighs] = await Promise.all([
         window.db.getSettings(),
         window.db.getOperatingHours(),
         window.db.getCategories(),
         window.db.getProducts(),
         window.db.getOptionals(),
-        window.db.getPromotions()
+        window.db.getPromotions(),
+        window.db.getNeighborhoods()
       ]);
 
       state.settings = settings;
@@ -143,6 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.products = prods.filter(p => p.is_active !== false);
       state.optionals = opts.filter(o => o.is_active !== false);
       state.promotions = promos.filter(p => p.is_active !== false);
+      state.neighborhoods = neighs || [];
       state.currentUser = window.auth.getCurrentUser();
 
       checkStoreStatus();
@@ -1113,7 +1115,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function populateNeighborhoodsDropdown() {
     const neighborhoods = await window.db.getNeighborhoods();
-    const active = neighborhoods.filter(n => n.is_active !== false);
+    state.neighborhoods = neighborhoods || [];
+    const active = state.neighborhoods
+      .filter(n => n.is_active !== false)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
     
     let html = '<option value="">Selecione o seu bairro...</option>';
     active.forEach(n => {

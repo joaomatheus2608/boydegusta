@@ -504,9 +504,11 @@
     async getNeighborhoods() {
       try {
         const result = await api('get-neighborhoods', 'GET');
-        if (result.data && result.data.length > 0) {
-          setStored(STORAGE_KEYS.NEIGHBORHOODS, result.data);
-          return result.data;
+        if (result && Array.isArray(result.data)) {
+          if (result.data.length > 0) {
+            setStored(STORAGE_KEYS.NEIGHBORHOODS, result.data);
+            return result.data;
+          }
         }
       } catch (e) {
         console.warn('Erro ao buscar bairros via API:', e);
@@ -521,28 +523,37 @@
     },
 
     async saveNeighborhood(neighborhood) {
-      const list = await this.getNeighborhoods();
       let saved = {
         ...neighborhood,
-        id: neighborhood.id || generateUuidOrId('bairro'),
+        name: String(neighborhood.name || '').trim(),
         delivery_fee: Number(neighborhood.delivery_fee) || 0,
         delivery_time_min: Number(neighborhood.delivery_time_min) || 60,
         is_active: neighborhood.is_active !== false
       };
-      const idx = list.findIndex(n => n.id === saved.id);
-      const updated = idx >= 0 ? list.map((n, i) => i === idx ? saved : n) : [...list, saved];
-      setStored(STORAGE_KEYS.NEIGHBORHOODS, updated);
+
+      const isRealUuid = isUuid(saved.id);
+      const payloadToSend = isRealUuid ? saved : { ...saved, id: undefined };
+
       try {
-        const result = await api('save-neighborhood', 'POST', saved);
-        if (result.data?.id) saved.id = result.data.id;
+        const result = await api('save-neighborhood', 'POST', payloadToSend);
+        if (result && result.data && result.data.id) {
+          saved = { ...saved, ...result.data };
+        }
       } catch (e) {
         console.warn('Erro ao salvar bairro via API:', e);
+        if (!saved.id) saved.id = generateUuidOrId('bairro');
       }
+
+      const list = getStored(STORAGE_KEYS.NEIGHBORHOODS, window.INITIAL_NEIGHBORHOODS || []);
+      const idx = list.findIndex(n => (saved.id && n.id === saved.id) || (n.name && n.name.toLowerCase() === (saved.name || '').toLowerCase()));
+      const updated = idx >= 0 ? list.map((n, i) => i === idx ? saved : n) : [...list, saved];
+      setStored(STORAGE_KEYS.NEIGHBORHOODS, updated);
+
       return saved;
     },
 
     async deleteNeighborhood(id) {
-      const list = await this.getNeighborhoods();
+      const list = getStored(STORAGE_KEYS.NEIGHBORHOODS, window.INITIAL_NEIGHBORHOODS || []);
       setStored(STORAGE_KEYS.NEIGHBORHOODS, list.filter(n => n.id !== id));
       try {
         await api('delete-neighborhood', 'DELETE', { id });

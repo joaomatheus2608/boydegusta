@@ -193,15 +193,25 @@ exports.handler = async function(event) {
     // -------------------------------------------------------
     if (method === 'POST' && path === 'save-category') {
       const cat = body;
+      const cleanPayload = {
+        name: String(cat.name || '').trim(),
+        slug: String(cat.slug || cat.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        order_index: Number(cat.order_index) || 0,
+        is_active: cat.is_active !== false
+      };
       let data;
       if (cat.id && /^[0-9a-f-]{36}$/i.test(cat.id)) {
         data = await supabaseFetch(`/categories?id=eq.${cat.id}`, {
-          method: 'PATCH', body: JSON.stringify(cat)
+          method: 'PATCH', body: JSON.stringify(cleanPayload)
         });
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          data = await supabaseFetch('/categories', {
+            method: 'POST', body: JSON.stringify({ id: cat.id, ...cleanPayload })
+          });
+        }
       } else {
-        const { id, ...payload } = cat;
         data = await supabaseFetch('/categories', {
-          method: 'POST', body: JSON.stringify(payload)
+          method: 'POST', body: JSON.stringify(cleanPayload)
         });
       }
       return respond(200, { data: Array.isArray(data) ? data[0] : data });
@@ -549,15 +559,25 @@ exports.handler = async function(event) {
     // -------------------------------------------------------
     if (method === 'POST' && path === 'save-neighborhood') {
       const n = body;
+      const cleanPayload = {
+        name: String(n.name || '').trim(),
+        delivery_fee: Number(n.delivery_fee) || 0,
+        delivery_time_min: Number(n.delivery_time_min) || 60,
+        is_active: n.is_active !== false
+      };
       let data;
       if (n.id && /^[0-9a-f-]{36}$/i.test(n.id)) {
         data = await supabaseFetch(`/neighborhoods?id=eq.${n.id}`, {
-          method: 'PATCH', body: JSON.stringify(n)
+          method: 'PATCH', body: JSON.stringify(cleanPayload)
         });
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          data = await supabaseFetch('/neighborhoods', {
+            method: 'POST', body: JSON.stringify({ id: n.id, ...cleanPayload })
+          });
+        }
       } else {
-        const { id, ...payload } = n;
         data = await supabaseFetch('/neighborhoods', {
-          method: 'POST', body: JSON.stringify(payload)
+          method: 'POST', body: JSON.stringify(cleanPayload)
         });
       }
       return respond(200, { data: Array.isArray(data) ? data[0] : data });
@@ -585,15 +605,24 @@ exports.handler = async function(event) {
     // -------------------------------------------------------
     if (method === 'POST' && path === 'save-courier') {
       const c = body;
+      const cleanPayload = {
+        name: String(c.name || '').trim(),
+        phone: String(c.phone || '').trim(),
+        is_active: c.is_active !== false
+      };
       let data;
       if (c.id && /^[0-9a-f-]{36}$/i.test(c.id)) {
         data = await supabaseFetch(`/couriers?id=eq.${c.id}`, {
-          method: 'PATCH', body: JSON.stringify(c)
+          method: 'PATCH', body: JSON.stringify(cleanPayload)
         });
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          data = await supabaseFetch('/couriers', {
+            method: 'POST', body: JSON.stringify({ id: c.id, ...cleanPayload })
+          });
+        }
       } else {
-        const { id, ...payload } = c;
         data = await supabaseFetch('/couriers', {
-          method: 'POST', body: JSON.stringify(payload)
+          method: 'POST', body: JSON.stringify(cleanPayload)
         });
       }
       return respond(200, { data: Array.isArray(data) ? data[0] : data });
