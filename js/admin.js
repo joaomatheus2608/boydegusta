@@ -4258,15 +4258,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       el.addEventListener('click', () => {
         const id = el.getAttribute('data-id');
         const name = el.getAttribute('data-name');
-        const price = Number(el.getAttribute('data-price'));
-        const obs = prompt(`Observações para "${name}"? (deixe vazio se não houver)`, '');
 
-        const existingIdx = adminState.waCart.findIndex(c => c.id === id && (c.notes || '') === (obs || ''));
+        // Detecta se é hambúrguer buscando o produto completo
+        const fullProduct = (adminState.products || []).find(p => p.id === id) ||
+                            (adminState.promotions || []).find(p => p.id === id);
+        const isBurger = fullProduct ? isBurgerProduct(fullProduct) : false;
+        let basePrice = Number(el.getAttribute('data-price'));
+        let finalName = name;
+        let burgerVersion = null;
+
+        // Se for hambúrguer, perguntar Tradicional ou Duplo
+        if (isBurger) {
+          const isDuplo = confirm(`"${name}"\n\nEscolha o tamanho:\n• OK → Duplo (+ R$ 5,00)\n• Cancelar → Tradicional`);
+          if (isDuplo) {
+            basePrice += 5;
+            finalName = `${name} (Duplo)`;
+            burgerVersion = 'duplo';
+          } else {
+            burgerVersion = 'tradicional';
+          }
+        }
+
+        const obs = prompt(`Observações para "${finalName}"? (deixe vazio se não houver)`, '');
+
+        const existingIdx = adminState.waCart.findIndex(c => c.id === id && c.burger_version === burgerVersion && (c.notes || '') === (obs || ''));
         if (existingIdx > -1) {
           adminState.waCart[existingIdx].quantity++;
           adminState.waCart[existingIdx].subtotal = adminState.waCart[existingIdx].price * adminState.waCart[existingIdx].quantity;
         } else {
-          adminState.waCart.push({ id, name, price, quantity: 1, subtotal: price, notes: obs || '' });
+          adminState.waCart.push({ id, name: finalName, price: basePrice, quantity: 1, subtotal: basePrice, notes: obs || '', burger_version: burgerVersion });
         }
 
         dom.waProductPickerModal.style.display = 'none';
@@ -4349,6 +4369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         quantity: item.quantity,
         subtotal: item.subtotal,
         notes: item.notes || '',
+        burger_version: item.burger_version || null,
         optionals: [],
         combo_choices: []
       }))
