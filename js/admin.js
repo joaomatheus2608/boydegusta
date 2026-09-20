@@ -21,6 +21,72 @@ function getBusinessDateString(dateInput = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+// ========================================================
+// POPUPS CUSTOMIZADOS (substituem confirm/prompt nativos)
+// ========================================================
+
+/**
+ * Exibe o popup de escolha de tamanho do hambúrguer.
+ * Retorna Promise<'tradicional' | 'duplo' | null> (null = cancelado)
+ */
+function showBurgerChoicePopup(productName) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('popupChoiceModal');
+    const nameEl = document.getElementById('popupChoiceProductName');
+    if (!modal) { resolve(confirm('Duplo? (+R$5)') ? 'duplo' : 'tradicional'); return; }
+
+    nameEl.textContent = productName;
+    modal.style.display = 'flex';
+
+    const cleanup = (result) => {
+      modal.style.display = 'none';
+      document.getElementById('popupChoiceTradicional').onclick = null;
+      document.getElementById('popupChoiceDuplo').onclick = null;
+      document.getElementById('popupChoiceCancel').onclick = null;
+      resolve(result);
+    };
+
+    document.getElementById('popupChoiceTradicional').onclick = () => cleanup('tradicional');
+    document.getElementById('popupChoiceDuplo').onclick       = () => cleanup('duplo');
+    document.getElementById('popupChoiceCancel').onclick      = () => cleanup(null);
+  });
+}
+
+/**
+ * Exibe o popup de campo de texto (observações).
+ * Retorna Promise<string | null> (null = cancelado, string vazia = sem obs)
+ */
+function showInputPopup(title, subtitle, placeholder) {
+  return new Promise(resolve => {
+    const modal    = document.getElementById('popupInputModal');
+    const titleEl  = document.getElementById('popupInputTitle');
+    const subEl    = document.getElementById('popupInputSubtitle');
+    const field    = document.getElementById('popupInputField');
+    const btnOk    = document.getElementById('popupInputConfirm');
+    const btnCancel= document.getElementById('popupInputCancel');
+    if (!modal) { resolve(prompt(title, '') || ''); return; }
+
+    titleEl.textContent  = title || 'Observações';
+    subEl.textContent    = subtitle || 'Alguma observação especial?';
+    field.placeholder    = placeholder || 'Ex: sem cebola...';
+    field.value          = '';
+    modal.style.display  = 'flex';
+    setTimeout(() => field.focus(), 80);
+
+    const cleanup = (result) => {
+      modal.style.display = 'none';
+      btnOk.onclick     = null;
+      btnCancel.onclick = null;
+      field.onkeydown   = null;
+      resolve(result);
+    };
+
+    btnOk.onclick     = () => cleanup(field.value.trim());
+    btnCancel.onclick = () => cleanup(null);
+    field.onkeydown   = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); cleanup(field.value.trim()); } };
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   let adminState = {
     settings: null,
@@ -4255,7 +4321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.waPickerProductsList.innerHTML = html;
 
     dom.waPickerProductsList.querySelectorAll('.wa-picker-item').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', async () => {
         const id = el.getAttribute('data-id');
         const name = el.getAttribute('data-name');
 
@@ -4267,10 +4333,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         let finalName = name;
         let burgerVersion = null;
 
-        // Se for hambúrguer, perguntar Tradicional ou Duplo
+        // Se for hambúrguer, exibir popup de escolha de tamanho
         if (isBurger) {
-          const isDuplo = confirm(`"${name}"\n\nEscolha o tamanho:\n• OK → Duplo (+ R$ 5,00)\n• Cancelar → Tradicional`);
-          if (isDuplo) {
+          const choice = await showBurgerChoicePopup(name);
+          if (choice === null) return; // cancelado
+          if (choice === 'duplo') {
             basePrice += 5;
             finalName = `${name} (Duplo)`;
             burgerVersion = 'duplo';
@@ -4279,14 +4346,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
 
-        const obs = prompt(`Observações para "${finalName}"? (deixe vazio se não houver)`, '');
+        // Popup de observações
+        const obs = await showInputPopup(
+          `Observações`,
+          `Algum detalhe especial para "${finalName}"?`,
+          'Ex: sem cebola, ponto da carne, molho extra...'
+        );
+        if (obs === null) return; // cancelado
 
-        const existingIdx = adminState.waCart.findIndex(c => c.id === id && c.burger_version === burgerVersion && (c.notes || '') === (obs || ''));
+        const existingIdx = adminState.waCart.findIndex(c => c.id === id && c.burger_version === burgerVersion && (c.notes || '') === obs);
         if (existingIdx > -1) {
           adminState.waCart[existingIdx].quantity++;
           adminState.waCart[existingIdx].subtotal = adminState.waCart[existingIdx].price * adminState.waCart[existingIdx].quantity;
         } else {
-          adminState.waCart.push({ id, name: finalName, price: basePrice, quantity: 1, subtotal: basePrice, notes: obs || '', burger_version: burgerVersion });
+          adminState.waCart.push({ id, name: finalName, price: basePrice, quantity: 1, subtotal: basePrice, notes: obs, burger_version: burgerVersion });
         }
 
         dom.waProductPickerModal.style.display = 'none';
