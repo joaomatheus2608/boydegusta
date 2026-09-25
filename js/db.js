@@ -173,6 +173,39 @@
     },
 
     // ----------------------------------------
+    // 0. BOOTSTRAP UNIFICADO (1 requisição para tudo)
+    // ----------------------------------------
+    async getBootstrap() {
+      try {
+        const result = await api('get-bootstrap', 'GET');
+        if (result && result.data) {
+          const d = result.data;
+          if (d.settings) setStored(STORAGE_KEYS.SETTINGS, d.settings);
+          if (d.hours && Array.isArray(d.hours)) setStored(STORAGE_KEYS.HOURS, d.hours);
+          if (d.categories && Array.isArray(d.categories)) setStored(STORAGE_KEYS.CATEGORIES, d.categories);
+          if (d.products && Array.isArray(d.products)) setStored(STORAGE_KEYS.PRODUCTS, d.products);
+          if (d.optionals && Array.isArray(d.optionals)) setStored(STORAGE_KEYS.OPTIONALS, d.optionals);
+          if (d.promotions && Array.isArray(d.promotions)) setStored(STORAGE_KEYS.PROMOTIONS, d.promotions);
+          if (d.neighborhoods && Array.isArray(d.neighborhoods)) setStored(STORAGE_KEYS.NEIGHBORHOODS, d.neighborhoods);
+          if (d.couriers && Array.isArray(d.couriers)) setStored(STORAGE_KEYS.COURIERS, d.couriers);
+          return d;
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar bootstrap unificado via API:', e);
+      }
+      return {
+        settings: getStored(STORAGE_KEYS.SETTINGS, window.INITIAL_SETTINGS),
+        hours: getStored(STORAGE_KEYS.HOURS, window.INITIAL_OPERATING_HOURS),
+        categories: getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES),
+        products: getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS),
+        optionals: getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS),
+        promotions: getStored(STORAGE_KEYS.PROMOTIONS, window.INITIAL_PROMOTIONS),
+        neighborhoods: getStored(STORAGE_KEYS.NEIGHBORHOODS, window.INITIAL_NEIGHBORHOODS || []),
+        couriers: getStored(STORAGE_KEYS.COURIERS, window.INITIAL_COURIERS || [])
+      };
+    },
+
+    // ----------------------------------------
     // 1. CONFIGURAÇÕES
     // ----------------------------------------
     async getSettings() {

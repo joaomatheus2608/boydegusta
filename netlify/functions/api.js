@@ -109,6 +109,34 @@ exports.handler = async function(event) {
 
   try {
     // -------------------------------------------------------
+    // GET BOOTSTRAP (Carregamento unificado em 1 requisição)
+    // -------------------------------------------------------
+    if (method === 'GET' && path === 'get-bootstrap') {
+      const [settingsData, hoursData, categories, products, optionals, promotions, neighborhoods, couriers] = await Promise.all([
+        supabaseFetch('/settings?limit=1').catch(() => null),
+        supabaseFetch('/operating_hours?order=day_of_week').catch(() => []),
+        supabaseFetch('/categories?order=order_index').catch(() => []),
+        supabaseFetch('/products?order=name').catch(() => []),
+        supabaseFetch('/optionals?order=name').catch(() => []),
+        supabaseFetch('/promotions?order=created_at.desc').catch(() => []),
+        supabaseFetch('/neighborhoods?order=name').catch(() => []),
+        supabaseFetch('/couriers?order=name').catch(() => [])
+      ]);
+      return respond(200, {
+        data: {
+          settings: Array.isArray(settingsData) ? settingsData[0] : settingsData,
+          hours: hoursData || [],
+          categories: categories || [],
+          products: products || [],
+          optionals: optionals || [],
+          promotions: promotions || [],
+          neighborhoods: neighborhoods || [],
+          couriers: couriers || []
+        }
+      });
+    }
+
+    // -------------------------------------------------------
     // GET SETTINGS
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-settings') {

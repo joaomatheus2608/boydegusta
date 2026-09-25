@@ -128,23 +128,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   async function init() {
     try {
-      const [settings, hours, cats, prods, opts, promos, neighs] = await Promise.all([
-        window.db.getSettings(),
-        window.db.getOperatingHours(),
-        window.db.getCategories(),
-        window.db.getProducts(),
-        window.db.getOptionals(),
-        window.db.getPromotions(),
-        window.db.getNeighborhoods()
-      ]);
+      const bootstrap = await window.db.getBootstrap();
 
-      state.settings = settings;
-      state.operatingHours = hours;
-      state.categories = cats.filter(c => c.is_active !== false).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
-      state.products = prods.filter(p => p.is_active !== false);
-      state.optionals = opts.filter(o => o.is_active !== false);
-      state.promotions = promos.filter(p => p.is_active !== false);
-      state.neighborhoods = neighs || [];
+      state.settings = bootstrap.settings || window.INITIAL_SETTINGS;
+      state.operatingHours = bootstrap.hours || window.INITIAL_OPERATING_HOURS;
+      state.categories = (bootstrap.categories || []).filter(c => c.is_active !== false).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+      state.products = (bootstrap.products || []).filter(p => p.is_active !== false);
+      state.optionals = (bootstrap.optionals || []).filter(o => o.is_active !== false);
+      state.promotions = (bootstrap.promotions || []).filter(p => p.is_active !== false);
+      state.neighborhoods = bootstrap.neighborhoods || [];
       state.currentUser = window.auth.getCurrentUser();
 
       checkStoreStatus();

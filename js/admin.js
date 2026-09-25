@@ -440,25 +440,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   async function loadAdminData() {
     try {
-      const [settings, orders, products, categories, optionals, promotions, neighborhoods, couriers] = await Promise.all([
-        window.db.getSettings(),
-        window.db.getOrders(),
-        window.db.getProducts(),
-        window.db.getCategories(),
-        window.db.getOptionals(),
-        window.db.getPromotions(),
-        window.db.getNeighborhoods(),
-        window.db.getCouriers()
+      const [bootstrap, orders] = await Promise.all([
+        window.db.getBootstrap(),
+        window.db.getOrders()
       ]);
 
-      adminState.settings = settings;
-      adminState.orders = orders;
-      adminState.products = products;
-      adminState.categories = categories;
-      adminState.optionals = optionals;
-      adminState.promotions = promotions;
-      adminState.neighborhoods = neighborhoods;
-      adminState.couriers = couriers;
+      adminState.settings = bootstrap.settings || window.INITIAL_SETTINGS;
+      adminState.orders = orders || [];
+      adminState.products = bootstrap.products || [];
+      adminState.categories = bootstrap.categories || [];
+      adminState.optionals = bootstrap.optionals || [];
+      adminState.promotions = bootstrap.promotions || [];
+      adminState.neighborhoods = bootstrap.neighborhoods || [];
+      adminState.couriers = bootstrap.couriers || [];
 
       updateStatusIndicator();
       renderSalonTables();
@@ -4677,8 +4671,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Auto-refresh automático a cada 5 segundos no painel administrativo
-  setInterval(async () => {
+  // Função utilitária para sincronizar pedidos em background
+  async function syncOrdersQuietly() {
     try {
       const freshOrders = await window.db.getOrders();
       checkForNewOrdersAndBeep(freshOrders);
@@ -4692,7 +4686,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       console.warn('Erro no auto-refresh de pedidos:', err);
     }
-  }, 5000);
+  }
+
+  // Auto-refresh inteligente a cada 1 minuto (60 segundos)
+  setInterval(async () => {
+    // Se a aba estiver em segundo plano ou minimizada, não faz a requisição para economizar cota do Netlify
+    if (document.hidden) return;
+    await syncOrdersQuietly();
+  }, 60000);
+
+  // Sincroniza imediatamente ao retornar para a aba do painel
+  document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+      await syncOrdersQuietly();
+    }
+  });
 
   // Checa autenticação inicial
   checkAuth();
