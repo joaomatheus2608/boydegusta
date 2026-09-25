@@ -464,7 +464,8 @@ exports.handler = async function(event) {
     // GET ORDERS
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-orders') {
-      const data = await supabaseFetch('/orders?select=*,order_items(*)&order=created_at.desc');
+      const limit = Number(event.queryStringParameters?.limit) || 150;
+      const data = await supabaseFetch(`/orders?select=*,order_items(*)&order=created_at.desc&limit=${limit}`);
       return respond(200, { data });
     }
 
