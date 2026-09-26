@@ -1001,6 +1001,17 @@
           </div>
 
           <div class="form-field-group">
+            <label class="form-field-label">🍔 Tipo de Hambúrguer / Opção de Tamanho *</label>
+            <select id="editProdBurgerType" class="form-text-input">
+              <option value="none">Não é hambúrguer (Bebidas, Porções, Sobremesas, etc.)</option>
+              <option value="both">Hambúrguer com Escolha (Cliente escolhe se quer Tradicional ou Duplo +R$ 5,00)</option>
+              <option value="tradicional">Apenas Tradicional (1 Carne / Tamanho único normal)</option>
+              <option value="duplo">Apenas Duplo (2 Carnes / Já é duplo por padrão)</option>
+            </select>
+            <span style="font-size: 0.73rem; color: #64748b; margin-top: 4px; display: block;">Define se no Cardápio, PDV e WhatsApp haverá opção de escolher entre tradicional e duplo (+R$ 5).</span>
+          </div>
+
+          <div class="form-field-group">
             <label class="form-field-label">Disponibilidade por Canal de Venda</label>
             <select id="editProdSalesChannel" class="form-text-input">
               <option value="todos">Disponível em Todos (Salão, Balcão e Delivery)</option>
@@ -1468,6 +1479,10 @@
         </div>
 
         <div style="margin-top: 14px; display: flex; gap: 10px;">
+          <button type="button" id="btnAddOtherCourier" class="btn-ghost-secondary"
+            style="flex: 1; font-size: 0.82rem;">
+            <i class="fi fi-sr-plus"></i> Digitar Outro Entregador
+          </button>
           <button type="button" id="btnConfirmDispatchNoCourier" class="btn-ghost-secondary"
             style="flex: 1; font-size: 0.82rem;">
             Despachar Sem Entregador

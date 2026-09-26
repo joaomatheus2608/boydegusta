@@ -314,8 +314,8 @@ exports.handler = async function(event) {
         customization_type: prod.customization_type ? String(prod.customization_type).trim() : 'none',
         customization_label: prod.customization_label ? String(prod.customization_label).trim() : null,
         customization_max_qty: (prod.customization_max_qty !== null && prod.customization_max_qty !== undefined && prod.customization_max_qty !== '') ? Number(prod.customization_max_qty) : 1,
-        customization_min_qty: (prod.customization_min_qty !== null && prod.customization_min_qty !== undefined && prod.customization_min_qty !== '') ? Number(prod.customization_min_qty) : 1,
         customization_options: Array.isArray(prod.customization_options) ? prod.customization_options : [],
+        burger_type: prod.burger_type ? String(prod.burger_type).trim() : null,
         order_index: Number(prod.order_index) || 0,
         updated_at: new Date().toISOString()
       };

@@ -341,6 +341,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function isBurgerProduct(product) {
     if (!product) return false;
+    if (product.burger_type === 'none') return false;
+    if (product.burger_type === 'both' || product.burger_type === 'tradicional' || product.burger_type === 'duplo') return true;
     const prodNameLower = (product.name || '').toLowerCase().trim();
     if (product.is_promo && (prodNameLower.includes('combo') || prodNameLower.includes('2 beirute') || prodNameLower.includes('promocao') || prodNameLower.includes('promoção'))) {
       return false;
@@ -675,10 +677,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Seção de tamanho do hambúrguer (Tradicional vs Duplo)
     const burgerSizeSection = document.getElementById('productModalBurgerSizeSection');
-    const isBurguer = !isCombo && !isFlavor && (isProductNaBrasa(product) || isProductNaChapa(product));
+    const isBurguer = !isCombo && !isFlavor && isBurgerProduct(product);
+    const burgerType = product.burger_type || (isBurguer ? 'both' : 'none');
+    const allowBurgerSizeChoice = !isCombo && !isFlavor && (burgerType === 'both');
 
     if (burgerSizeSection) {
-      if (isBurguer) {
+      if (allowBurgerSizeChoice) {
         burgerSizeSection.style.display = 'block';
         state.modalBurgerVersion = 'tradicional';
         const radios = burgerSizeSection.querySelectorAll('input[name="modalBurgerSize"]');
@@ -718,6 +722,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } else {
         burgerSizeSection.style.display = 'none';
+        if (burgerType === 'duplo') {
+          state.modalBurgerVersion = 'duplo';
+        } else if (burgerType === 'tradicional') {
+          state.modalBurgerVersion = 'tradicional';
+        } else {
+          state.modalBurgerVersion = null;
+        }
       }
     }
 
@@ -926,14 +937,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateModalDynamicPrice() {
     if (!state.currentModalProduct) return;
     const basePrice = getProductEffectivePrice(state.currentModalProduct);
-    const burgerExtra = (state.modalBurgerVersion === 'duplo') ? 5 : 0;
+    const bType = state.currentModalProduct.burger_type || (isBurgerProduct(state.currentModalProduct) ? 'both' : 'none');
+    const isBothChoice = (bType === 'both');
+    const burgerExtra = (isBothChoice && state.modalBurgerVersion === 'duplo') ? 5 : 0;
     const optsPrice = state.modalSelectedOptionals.reduce((sum, opt) => sum + (Number(opt.price) || 0), 0);
     const unitTotal = basePrice + burgerExtra + optsPrice;
     const finalTotal = unitTotal * state.modalQty;
 
     const formattedUnit = basePrice > 0 ? window.formatCurrency(unitTotal) : 'A definir no painel';
     dom.productModalPrice.textContent = formattedUnit;
-    dom.btnModalAddToCart.textContent = `Adicionar \u2022 ${window.formatCurrency(finalTotal)}`;
+    dom.btnModalAddToCart.textContent = `Adicionar • ${window.formatCurrency(finalTotal)}`;
     dom.btnModalAddToCart.disabled = false;
   }
 
@@ -1528,10 +1541,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const effectivePrice = getProductEffectivePrice(state.currentModalProduct);
-        const isBurguer = !isCombo && !isFlavor && (isProductNaBrasa(state.currentModalProduct) || isProductNaChapa(state.currentModalProduct));
+        const isBurguer = !isCombo && !isFlavor && isBurgerProduct(state.currentModalProduct);
+        const bType = state.currentModalProduct.burger_type || (isBurguer ? 'both' : 'none');
+        const isBothChoice = (bType === 'both');
         const isDuplo = isBurguer && state.modalBurgerVersion === 'duplo';
-        const burgerExtra = isDuplo ? 5 : 0;
-        const versionLabel = isDuplo ? ' (Duplo)' : '';
+        const burgerExtra = (isBothChoice && isDuplo) ? 5 : 0;
+        const versionLabel = (isBothChoice && isDuplo && !state.currentModalProduct.name.includes('(Duplo)')) ? ' (Duplo)' : '';
 
         const productToAdd = {
           ...state.currentModalProduct,

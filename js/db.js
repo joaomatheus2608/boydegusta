@@ -187,7 +187,34 @@
           if (d.optionals && Array.isArray(d.optionals)) setStored(STORAGE_KEYS.OPTIONALS, d.optionals);
           if (d.promotions && Array.isArray(d.promotions)) setStored(STORAGE_KEYS.PROMOTIONS, d.promotions);
           if (d.neighborhoods && Array.isArray(d.neighborhoods)) setStored(STORAGE_KEYS.NEIGHBORHOODS, d.neighborhoods);
-          if (d.couriers && Array.isArray(d.couriers)) setStored(STORAGE_KEYS.COURIERS, d.couriers);
+
+          // Garante que entregadores nunca fiquem vazios mesclando remotos com seed e local
+          const seedCouriers = window.INITIAL_COURIERS || [];
+          const remoteCouriers = Array.isArray(d.couriers) ? d.couriers : [];
+          const localCouriers = getStored(STORAGE_KEYS.COURIERS, []);
+          const mergedCouriersMap = new Map();
+          seedCouriers.forEach(c => {
+            const k = (c.name || '').trim().toLowerCase();
+            if (k) mergedCouriersMap.set(k, { ...c });
+          });
+          localCouriers.forEach(c => {
+            const k = (c.name || '').trim().toLowerCase();
+            if (k) {
+              const existing = mergedCouriersMap.get(k) || {};
+              mergedCouriersMap.set(k, { ...existing, ...c });
+            }
+          });
+          remoteCouriers.forEach(c => {
+            const k = (c.name || '').trim().toLowerCase();
+            if (k) {
+              const existing = mergedCouriersMap.get(k) || {};
+              mergedCouriersMap.set(k, { ...existing, ...c });
+            }
+          });
+          const finalCouriers = Array.from(mergedCouriersMap.values());
+          d.couriers = finalCouriers;
+          setStored(STORAGE_KEYS.COURIERS, finalCouriers);
+
           return d;
         }
       } catch (e) {

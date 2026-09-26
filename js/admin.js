@@ -213,6 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dispatchOrderId: document.getElementById('dispatchOrderId'),
     dispatchCouriersList: document.getElementById('dispatchCouriersList'),
     btnDispatchModalClose: document.getElementById('btnDispatchModalClose'),
+    btnAddOtherCourier: document.getElementById('btnAddOtherCourier'),
     btnConfirmDispatchNoCourier: document.getElementById('btnConfirmDispatchNoCourier'),
 
     // Produtos
@@ -228,6 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     editProdId: document.getElementById('editProdId'),
     editProdName: document.getElementById('editProdName'),
     editProdCategory: document.getElementById('editProdCategory'),
+    editProdBurgerType: document.getElementById('editProdBurgerType'),
     editProdDescription: document.getElementById('editProdDescription'),
     editProdPrice: document.getElementById('editProdPrice'),
     editProdAvailable: document.getElementById('editProdAvailable'),
@@ -452,7 +454,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       adminState.optionals = bootstrap.optionals || [];
       adminState.promotions = bootstrap.promotions || [];
       adminState.neighborhoods = bootstrap.neighborhoods || [];
-      adminState.couriers = bootstrap.couriers || [];
+      const defaultCouriers = window.INITIAL_COURIERS || [
+        { id: 'courier-1', name: 'Paulo', phone: '', is_active: true },
+        { id: 'courier-2', name: 'Marcos', phone: '', is_active: true },
+        { id: 'courier-3', name: 'Hernandes', phone: '', is_active: true }
+      ];
+      adminState.couriers = (bootstrap.couriers && bootstrap.couriers.length > 0) ? bootstrap.couriers : defaultCouriers;
 
       updateStatusIndicator();
       renderSalonTables();
@@ -904,6 +911,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function isBurgerProduct(product) {
     if (!product) return false;
+    if (product.burger_type === 'none') return false;
+    if (product.burger_type === 'both' || product.burger_type === 'tradicional' || product.burger_type === 'duplo') return true;
     const prodNameLower = (product.name || '').toLowerCase().trim();
     if (product.is_promo && (prodNameLower.includes('combo') || prodNameLower.includes('2 beirute') || prodNameLower.includes('promoção') || prodNameLower.includes('promocao'))) {
       return false;
@@ -1026,9 +1035,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Seção versão hambúrguer (Tradicional vs Duplo +R$ 5)
+    const burgerType = product.burger_type || (isBurger ? 'both' : 'none');
+    const allowBurgerSizeChoice = (burgerType === 'both');
     const burgerSizeSection = document.getElementById('posCustomBurgerSizeSection');
     if (burgerSizeSection) {
-      if (isBurger) {
+      if (allowBurgerSizeChoice) {
         burgerSizeSection.style.display = 'block';
         const radios = burgerSizeSection.querySelectorAll('input[name="posBurgerSize"]');
         const labels = burgerSizeSection.querySelectorAll('label');
@@ -1052,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           r.checked = r.value === 'tradicional';
         });
         updateRadioVisual('tradicional');
+        adminState.posCustomItemState.burgerVersion = 'tradicional';
 
         radios.forEach(r => {
           r.onchange = () => {
@@ -1063,6 +1075,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } else {
         burgerSizeSection.style.display = 'none';
+        if (burgerType === 'duplo') {
+          adminState.posCustomItemState.burgerVersion = 'duplo';
+        } else if (burgerType === 'tradicional') {
+          adminState.posCustomItemState.burgerVersion = 'tradicional';
+        } else {
+          adminState.posCustomItemState.burgerVersion = null;
+        }
       }
     }
 
@@ -1986,8 +2005,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.dispatchOrderId.value = orderId;
     dom.dispatchModalSubtitle.textContent = `Pedido #${String(order.order_number).padStart(4, '0')} — ${order.customer_name} (${order.delivery_address?.neighborhood || 'Delivery'})`;
 
+    let couriers = adminState.couriers || [];
+    if (!couriers || couriers.length === 0) {
+      couriers = window.INITIAL_COURIERS || [
+        { id: 'courier-1', name: 'Paulo', phone: '', is_active: true },
+        { id: 'courier-2', name: 'Marcos', phone: '', is_active: true },
+        { id: 'courier-3', name: 'Hernandes', phone: '', is_active: true }
+      ];
+      adminState.couriers = couriers;
+    }
+
     let couriersHtml = '';
-    const couriers = adminState.couriers || [];
     couriers.forEach(c => {
       if (c.is_active !== false) {
         const isCurrent = order.courier_name === c.name;
@@ -2018,6 +2046,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     dom.dispatchCourierModal.style.display = 'flex';
+  }
+
+  if (dom.btnAddOtherCourier) {
+    dom.btnAddOtherCourier.addEventListener('click', async () => {
+      const orderId = dom.dispatchOrderId.value;
+      const order = adminState.orders.find(o => o.id === orderId);
+      if (!order) return;
+      const customCourier = await showInputPopup(
+        'Outro Entregador',
+        'Digite o nome do entregador/motoboy:',
+        'Ex: Roberto, Marcelo...'
+      );
+      if (!customCourier) return;
+
+      const exists = (adminState.couriers || []).some(c => c.name && c.name.toLowerCase() === customCourier.toLowerCase());
+      if (!exists) {
+        const newC = { id: 'courier-' + Date.now(), name: customCourier, is_active: true };
+        adminState.couriers.push(newC);
+        try { await window.db.saveCourier(newC); } catch {}
+      }
+
+      await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, customCourier);
+      order.status = 'saiu_para_entrega';
+      order.courier_name = customCourier;
+      dom.dispatchCourierModal.style.display = 'none';
+      renderOrders();
+      renderCashReport();
+      renderDashboard();
+    });
   }
 
   dom.btnDispatchModalClose.addEventListener('click', () => {
@@ -2623,6 +2680,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.editProdPrice.value = prod.price !== null && prod.price !== undefined ? prod.price : '';
       dom.editProdAvailable.value = String(prod.is_available !== false);
       if (dom.editProdSalesChannel) dom.editProdSalesChannel.value = prod.sales_channel || 'todos';
+      if (dom.editProdBurgerType) {
+        if (prod.burger_type) {
+          dom.editProdBurgerType.value = prod.burger_type;
+        } else if (isBurgerProduct(prod)) {
+          dom.editProdBurgerType.value = 'both';
+        } else {
+          dom.editProdBurgerType.value = 'none';
+        }
+      }
       dom.editProdImage.value = prod.image_url || '';
 
       // Configuração de Promoção por Dia no Produto
@@ -2655,11 +2721,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.productEditModalTitle.textContent = 'Novo Produto';
       dom.editProdId.value = '';
       dom.editProdName.value = '';
-      dom.editProdCategory.value = adminState.categories[0]?.id || '';
+      const defaultCatId = adminState.categories[0]?.id || '';
+      dom.editProdCategory.value = defaultCatId;
       dom.editProdDescription.value = '';
       dom.editProdPrice.value = '';
       dom.editProdAvailable.value = 'true';
       if (dom.editProdSalesChannel) dom.editProdSalesChannel.value = 'todos';
+      if (dom.editProdBurgerType) {
+        const isBurgerCat = ['cat-brasa', 'cat-burguer', 'cat-burger'].includes(defaultCatId);
+        dom.editProdBurgerType.value = isBurgerCat ? 'both' : 'none';
+      }
       dom.editProdImage.value = '';
       if (dom.editProdHasDayPromo) dom.editProdHasDayPromo.checked = false;
       if (dom.editProdDayPromoFields) dom.editProdDayPromoFields.style.display = 'none';
@@ -2678,6 +2749,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (dom.editProdImagePreviewWrap) dom.editProdImagePreviewWrap.style.display = 'none';
     }
     dom.productEditModal.style.display = 'flex';
+  }
+
+  if (dom.editProdCategory) {
+    dom.editProdCategory.addEventListener('change', () => {
+      if (!dom.editProdId.value && dom.editProdBurgerType) {
+        const catId = dom.editProdCategory.value || '';
+        const cat = adminState.categories.find(c => c.id === catId);
+        const catSlug = (cat?.slug || '').toLowerCase();
+        const catName = (cat?.name || '').toLowerCase();
+        const isBurgerCat = ['cat-brasa', 'cat-burguer', 'cat-burger'].includes(catId) ||
+                            catSlug.includes('brasa') || catSlug.includes('burguer') || catSlug.includes('burger') ||
+                            catName.includes('brasa') || catName.includes('burguer') || catName.includes('burger');
+        dom.editProdBurgerType.value = isBurgerCat ? 'both' : 'none';
+      }
+    });
   }
 
   if (dom.editProdHasDayPromo) {
@@ -2785,10 +2871,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const customLabel = hasCustomization && dom.editProdCustomLabel ? dom.editProdCustomLabel.value.trim() : null;
       const rawCustomOptions = hasCustomization && dom.editProdCustomOptions ? dom.editProdCustomOptions.value : '';
       const customOptions = rawCustomOptions.split('\n').map(s => s.trim()).filter(Boolean);
+      const burgerType = dom.editProdBurgerType ? dom.editProdBurgerType.value : 'none';
 
       const payload = {
         name: dom.editProdName.value.trim(),
         category_id: dom.editProdCategory.value,
+        burger_type: burgerType,
         description: dom.editProdDescription.value.trim(),
         price: rawPrice ? Number(rawPrice) : null,
         is_available: dom.editProdAvailable.value === 'true',
@@ -4323,12 +4411,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fullProduct = (adminState.products || []).find(p => p.id === id) ||
                             (adminState.promotions || []).find(p => p.id === id);
         const isBurger = fullProduct ? isBurgerProduct(fullProduct) : false;
+        const burgerType = fullProduct?.burger_type || (isBurger ? 'both' : 'none');
         let basePrice = Number(el.getAttribute('data-price'));
         let finalName = name;
         let burgerVersion = null;
 
-        // Se for hambúrguer, exibir popup de escolha de tamanho
-        if (isBurger) {
+        // Se for hambúrguer com escolha (both), exibir popup de escolha de tamanho
+        if (burgerType === 'both') {
           const choice = await showBurgerChoicePopup(name);
           if (choice === null) return; // cancelado
           if (choice === 'duplo') {
@@ -4338,6 +4427,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else {
             burgerVersion = 'tradicional';
           }
+        } else if (burgerType === 'duplo') {
+          burgerVersion = 'duplo';
+          if (!finalName.toLowerCase().includes('duplo')) {
+            finalName = `${name} (Duplo)`;
+          }
+        } else if (burgerType === 'tradicional') {
+          burgerVersion = 'tradicional';
         }
 
         // Popup de observações
