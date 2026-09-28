@@ -491,15 +491,24 @@
       let newOrder = {
         ...orderPayload,
         status: orderPayload.status || 'novo',
-        table_number: orderPayload.table_number ? Number(orderPayload.table_number) : null,
+        table_number: (orderPayload.table_number !== null && orderPayload.table_number !== undefined && orderPayload.table_number !== '') ? Number(orderPayload.table_number) : null,
         whatsapp_sent: orderPayload.whatsapp_sent !== false,
         created_at: orderPayload.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
         items: orderPayload.items || []
       };
 
+      const apiPayload = { ...newOrder };
+      // Se user_id não for UUID válido, remove do payload da API
+      if (apiPayload.user_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(apiPayload.user_id)) {
+        delete apiPayload.user_id;
+      }
+      if (apiPayload.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(apiPayload.id)) {
+        delete apiPayload.id;
+      }
+
       try {
-        const result = await api('create-order', 'POST', newOrder);
+        const result = await api('create-order', 'POST', apiPayload);
         if (result?.data) {
           newOrder = { ...newOrder, ...result.data, items: result.data.items || result.data.order_items || newOrder.items };
         }

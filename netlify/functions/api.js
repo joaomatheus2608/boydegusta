@@ -476,69 +476,112 @@ exports.handler = async function(event) {
       const { items, ...orderData } = body;
 
       // Obtém o maior order_number atual no banco para gerar o próximo sequencial único
+      let nextOrderNumber = 1;
       try {
         const lastOrders = await supabaseFetch('/orders?select=order_number&order=order_number.desc&limit=1');
         const maxOrderNumber = (Array.isArray(lastOrders) && lastOrders[0]?.order_number) ? Number(lastOrders[0].order_number) : 0;
-        orderData.order_number = maxOrderNumber + 1;
+        nextOrderNumber = maxOrderNumber + 1;
       } catch (e) {
         console.warn('Erro ao consultar maior order_number:', e);
-        orderData.order_number = Number(orderData.order_number) || 1;
+        nextOrderNumber = Number(orderData.order_number) || Math.floor(Date.now() / 1000) % 10000;
       }
 
       // Normaliza payment_method para atender ao check constraint do PostgreSQL
+      let paymentMethod = 'pix';
       if (orderData.payment_method) {
         const pm = String(orderData.payment_method).toLowerCase().trim();
-        if (pm.includes('pix')) orderData.payment_method = 'pix';
-        else if (pm.includes('dinheiro')) orderData.payment_method = 'dinheiro';
-        else if (pm.includes('credito') || pm.includes('crédito')) orderData.payment_method = 'cartao_credito';
-        else if (pm.includes('debito') || pm.includes('débito')) orderData.payment_method = 'cartao_debito';
-        else if (pm.includes('cartao') || pm.includes('cartão')) orderData.payment_method = 'cartao';
-        else if (pm.includes('pendente')) orderData.payment_method = 'pendente';
-        else orderData.payment_method = 'pix';
-      } else {
-        orderData.payment_method = 'pendente';
+        if (pm.includes('pix')) paymentMethod = 'pix';
+        else if (pm.includes('dinheiro')) paymentMethod = 'dinheiro';
+        else if (pm.includes('credito') || pm.includes('crédito')) paymentMethod = 'cartao_credito';
+        else if (pm.includes('debito') || pm.includes('débito')) paymentMethod = 'cartao_debito';
+        else if (pm.includes('cartao') || pm.includes('cartão')) paymentMethod = 'cartao';
+        else if (pm.includes('pendente')) paymentMethod = 'pendente';
       }
 
       // Normaliza order_type
+      let orderType = 'delivery';
       if (orderData.order_type) {
         const ot = String(orderData.order_type).toLowerCase().trim();
-        if (ot === 'retirada' || ot === 'pickup') orderData.order_type = 'pickup';
-        else if (ot === 'mesa') orderData.order_type = 'mesa';
-        else if (ot === 'balcao' || ot === 'balcão') orderData.order_type = 'balcao';
-        else orderData.order_type = 'delivery';
-      } else {
-        orderData.order_type = 'delivery';
+        if (ot === 'retirada' || ot === 'pickup') orderType = 'pickup';
+        else if (ot === 'mesa') orderType = 'mesa';
+        else if (ot === 'balcao' || ot === 'balcão') orderType = 'balcao';
       }
 
-      // Remove id inválido para o PostgreSQL gerar UUID
-      if (orderData.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderData.id)) {
-        delete orderData.id;
+      // Constrói payload limpo e seguro para a tabela orders
+      const cleanOrderPayload = {
+        order_number: nextOrderNumber,
+        customer_name: String(orderData.customer_name || 'Cliente').trim(),
+        customer_phone: String(orderData.customer_phone || '').trim(),
+        order_type: orderType,
+        status: orderData.status || 'novo',
+        delivery_address: orderData.delivery_address || null,
+        payment_method: paymentMethod,
+        change_for: (orderData.change_for !== null && orderData.change_for !== undefined && orderData.change_for !== '') ? Number(orderData.change_for) : null,
+        subtotal: Number(orderData.subtotal) || 0,
+        delivery_fee: Number(orderData.delivery_fee) || 0,
+        total: Number(orderData.total) || 0,
+        notes: orderData.notes ? String(orderData.notes).trim() : null,
+        table_number: (orderData.table_number !== null && orderData.table_number !== undefined && orderData.table_number !== '') ? Number(orderData.table_number) : null,
+        courier_name: orderData.courier_name ? String(orderData.courier_name).trim() : null,
+        created_at: orderData.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Só envia user_id se for um UUID válido de 36 caracteres (evita erro de sintaxe UUID no PostgreSQL)
+      if (orderData.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderData.user_id)) {
+        cleanOrderPayload.user_id = orderData.user_id;
       }
 
-      const insertedOrders = await supabaseFetch('/orders', {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-      });
+      let insertedOrders;
+      try {
+        insertedOrders = await supabaseFetch('/orders', {
+          method: 'POST',
+          body: JSON.stringify(cleanOrderPayload)
+        });
+      } catch (err) {
+        console.warn('Erro ao inserir pedido com payload completo, tentando com fallback:', err.message);
+        // Em caso de colisão de order_number ou outro detalhe, recalcula
+        cleanOrderPayload.order_number = nextOrderNumber + Math.floor(Math.random() * 10) + 1;
+        insertedOrders = await supabaseFetch('/orders', {
+          method: 'POST',
+          body: JSON.stringify(cleanOrderPayload)
+        });
+      }
+
       const insertedOrder = Array.isArray(insertedOrders) ? insertedOrders[0] : insertedOrders;
 
       if (insertedOrder?.id && items?.length > 0) {
-        const orderItems = items.map(item => ({
-          order_id: insertedOrder.id,
-          product_id: /^[0-9a-f-]{36}$/i.test(item.id) ? item.id : null,
-          product_name: item.name || item.product_name,
-          unit_price: Number(item.price || item.unit_price) || 0,
-          quantity: Number(item.quantity) || 1,
-          subtotal: Number(item.subtotal) || ((Number(item.price || item.unit_price) || 0) * (Number(item.quantity) || 1)),
-          optionals: item.optionals || [],
-          notes: item.notes || '',
-          is_combo: Boolean(item.is_combo),
-          combo_choices: item.combo_choices || []
-        }));
-        const insertedItems = await supabaseFetch('/order_items', {
-          method: 'POST', body: JSON.stringify(orderItems)
-        });
-        insertedOrder.items = insertedItems || [];
-        insertedOrder.order_items = insertedOrder.items;
+        try {
+          const orderItems = items.map(item => ({
+            order_id: insertedOrder.id,
+            product_id: /^[0-9a-f-]{36}$/i.test(item.id) ? item.id : null,
+            product_name: item.name || item.product_name,
+            unit_price: Number(item.price || item.unit_price) || 0,
+            quantity: Number(item.quantity) || 1,
+            subtotal: Number(item.subtotal) || ((Number(item.price || item.unit_price) || 0) * (Number(item.quantity) || 1)),
+            optionals: item.optionals || [],
+            notes: item.notes || '',
+            is_combo: Boolean(item.is_combo),
+            combo_choices: item.combo_choices || []
+          }));
+          const insertedItems = await supabaseFetch('/order_items', {
+            method: 'POST', body: JSON.stringify(orderItems)
+          });
+          insertedOrder.items = insertedItems || [];
+          insertedOrder.order_items = insertedOrder.items;
+        } catch (itemErr) {
+          console.warn('Falha ao salvar itens detalhados do pedido, tentando itens simplificados:', itemErr.message);
+          try {
+            const simpleItems = items.map(item => ({
+              order_id: insertedOrder.id,
+              product_name: item.name || item.product_name || 'Item',
+              unit_price: Number(item.price || item.unit_price) || 0,
+              quantity: Number(item.quantity) || 1,
+              subtotal: Number(item.subtotal) || 0
+            }));
+            await supabaseFetch('/order_items', { method: 'POST', body: JSON.stringify(simpleItems) });
+          } catch {}
+        }
       }
 
       return respond(200, { data: insertedOrder });
