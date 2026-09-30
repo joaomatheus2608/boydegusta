@@ -852,6 +852,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prodName = (product.name || '').toLowerCase();
     const prodDesc = (product.description || '').toLowerCase();
 
+    // Excluir explicitamente bebidas, acompanhamentos e adicionais
+    if (catId === 'cat-bebidas' || catSlug.includes('bebida') || catName.includes('bebida') || catSlug.includes('suco') || catName.includes('suco') || prodName.includes('suco') || prodName.includes('refrigerante') || prodName.includes('pepsi') || prodName.includes('coca') || prodName.includes('água') || prodName.includes('agua') || prodName.includes('schweppes') || prodName.includes('h2o')) return false;
+    if (catId === 'cat-acomp' || catSlug.includes('acomp') || catName.includes('acompanha')) return false;
+    if (catId === 'cat-pao' || catSlug.includes('pao') || catSlug.includes('pão') || catName.includes('pão') || catName.includes('pao') || prodName.startsWith('pão') || prodName.startsWith('pao')) return false;
+    if (catId === 'cat-beirute' || catSlug.includes('beirute') || catName.includes('beirute') || prodName.includes('beirute')) return false;
+    if (catId === 'cat-batata' || catSlug.includes('batata') || catName.includes('batata') || prodName.includes('batata') || prodName.includes('fritas')) return false;
+    if (catId === 'cat-adic' || catSlug.includes('adic') || catName.includes('adicional')) return false;
+
     return catId === 'cat-brasa' ||
            catSlug.includes('brasa') ||
            catName.includes('brasa') ||
@@ -871,7 +879,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prodDesc = (product.description || '').toLowerCase();
 
     // Excluir explicitamente categorias que não são hambúrguer
-    if (catId === 'cat-bebidas' || catSlug.includes('bebida') || catName.includes('bebida')) return false;
+    if (catId === 'cat-bebidas' || catSlug.includes('bebida') || catName.includes('bebida') || catSlug.includes('suco') || catName.includes('suco') || prodName.includes('suco') || prodName.includes('refrigerante') || prodName.includes('pepsi') || prodName.includes('coca') || prodName.includes('água') || prodName.includes('agua') || prodName.includes('schweppes') || prodName.includes('h2o')) return false;
     if (catId === 'cat-acomp' || catSlug.includes('acomp') || catName.includes('acompanha')) return false;
     if (catId === 'cat-pao' || catSlug.includes('pao') || catSlug.includes('pão') || catName.includes('pão') || catName.includes('pao') || prodName.startsWith('pão') || prodName.startsWith('pao')) return false;
     if (catId === 'cat-beirute' || catSlug.includes('beirute') || catName.includes('beirute') || prodName.includes('beirute')) return false;
@@ -913,7 +921,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!product) return false;
     if (product.burger_type === 'none') return false;
     if (product.burger_type === 'both' || product.burger_type === 'tradicional' || product.burger_type === 'duplo') return true;
+    const catId = (product.category_id || '').toLowerCase();
+    const cat = (adminState.categories || []).find(c => c.id === product.category_id);
+    const catSlug = cat ? (cat.slug || '').toLowerCase() : '';
+    const catName = cat ? (cat.name || '').toLowerCase() : '';
     const prodNameLower = (product.name || '').toLowerCase().trim();
+    if (catId === 'cat-bebidas' || catSlug.includes('bebida') || catName.includes('bebida') || prodNameLower.includes('suco') || prodNameLower.includes('refrigerante') || prodNameLower.includes('pepsi') || prodNameLower.includes('coca') || prodNameLower.includes('água') || prodNameLower.includes('agua') || prodNameLower.includes('schweppes') || prodNameLower.includes('h2o')) {
+      return false;
+    }
     if (product.is_promo && (prodNameLower.includes('combo') || prodNameLower.includes('2 beirute') || prodNameLower.includes('promoção') || prodNameLower.includes('promocao'))) {
       return false;
     }
@@ -1194,6 +1209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     } else {
       dom.posCustomOptionalsSection.style.display = 'none';
+      dom.posCustomOptionalsList.innerHTML = '';
     }
 
     updateCustomSubtotal();
@@ -1232,13 +1248,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     let extra = 0;
     const checkedOpts = [];
-    dom.posCustomOptionalsList.querySelectorAll('.pos-optional-check:checked').forEach(chk => {
-      const price = Number(chk.getAttribute('data-price')) || 0;
-      const name = chk.getAttribute('data-name');
-      const id = chk.getAttribute('data-id');
-      extra += price;
-      checkedOpts.push({ id, name, price });
-    });
+
+    // Só calcula adicionais se a seção estiver visível
+    const isSectionVisible = dom.posCustomOptionalsSection && dom.posCustomOptionalsSection.style.display !== 'none';
+    if (isSectionVisible) {
+      dom.posCustomOptionalsList.querySelectorAll('.pos-optional-check:checked').forEach(chk => {
+        const price = Number(chk.getAttribute('data-price')) || 0;
+        const name = chk.getAttribute('data-name');
+        const id = chk.getAttribute('data-id');
+        extra += price;
+        checkedOpts.push({ id, name, price });
+      });
+    }
 
     adminState.posCustomItemState.selectedOptionals = checkedOpts;
     const unitTotal = base + extra;

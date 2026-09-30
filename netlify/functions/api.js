@@ -475,12 +475,17 @@ exports.handler = async function(event) {
     if (method === 'POST' && path === 'create-order') {
       const { items, ...orderData } = body;
 
-      // Obtém o maior order_number atual no banco para gerar o próximo sequencial único
+      // Obtém os maiores order_number atuais no banco para calcular o próximo sequencial
       let nextOrderNumber = 1;
       try {
-        const lastOrders = await supabaseFetch('/orders?select=order_number&order=order_number.desc&limit=1');
-        const maxOrderNumber = (Array.isArray(lastOrders) && lastOrders[0]?.order_number) ? Number(lastOrders[0].order_number) : 0;
-        nextOrderNumber = maxOrderNumber + 1;
+        const lastOrders = await supabaseFetch('/orders?select=order_number&order=order_number.desc&limit=10');
+        if (Array.isArray(lastOrders) && lastOrders.length > 0) {
+          const validNums = lastOrders
+            .map(o => Number(o.order_number))
+            .filter(n => !isNaN(n) && n > 0);
+          const maxOrderNumber = validNums.length > 0 ? Math.max(...validNums) : 0;
+          nextOrderNumber = maxOrderNumber + 1;
+        }
       } catch (e) {
         console.warn('Erro ao consultar maior order_number:', e);
         nextOrderNumber = Number(orderData.order_number) || Math.floor(Date.now() / 1000) % 10000;
@@ -532,20 +537,38 @@ exports.handler = async function(event) {
         cleanOrderPayload.user_id = orderData.user_id;
       }
 
-      let insertedOrders;
-      try {
-        insertedOrders = await supabaseFetch('/orders', {
-          method: 'POST',
-          body: JSON.stringify(cleanOrderPayload)
-        });
-      } catch (err) {
-        console.warn('Erro ao inserir pedido com payload completo, tentando com fallback:', err.message);
-        // Em caso de colisão de order_number ou outro detalhe, recalcula
-        cleanOrderPayload.order_number = nextOrderNumber + Math.floor(Math.random() * 10) + 1;
-        insertedOrders = await supabaseFetch('/orders', {
-          method: 'POST',
-          body: JSON.stringify(cleanOrderPayload)
-        });
+      // Loop de inserção com até 5 tentativas e resolução de concorrência/colisão de order_number
+      let insertedOrders = null;
+      let lastInsertErr = null;
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        try {
+          cleanOrderPayload.order_number = nextOrderNumber;
+          insertedOrders = await supabaseFetch('/orders', {
+            method: 'POST',
+            body: JSON.stringify(cleanOrderPayload)
+          });
+          if (insertedOrders) break;
+        } catch (err) {
+          lastInsertErr = err;
+          console.warn(`Tentativa ${attempt}/5 de inserir pedido falhou (${err.message}). Recalculando order_number...`);
+          try {
+            const freshOrders = await supabaseFetch('/orders?select=order_number&order=order_number.desc&limit=10');
+            if (Array.isArray(freshOrders) && freshOrders.length > 0) {
+              const nums = freshOrders.map(o => Number(o.order_number)).filter(n => !isNaN(n) && n > 0);
+              const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+              nextOrderNumber = Math.max(maxNum + 1, nextOrderNumber + 1);
+            } else {
+              nextOrderNumber = nextOrderNumber + 1;
+            }
+          } catch {
+            nextOrderNumber = nextOrderNumber + Math.floor(Math.random() * 5) + 1;
+          }
+          await new Promise(r => setTimeout(r, 100 * attempt));
+        }
+      }
+
+      if (!insertedOrders) {
+        throw new Error(`Falha ao registrar pedido no banco de dados: ${lastInsertErr?.message || 'Erro de conexão com banco'}`);
       }
 
       const insertedOrder = Array.isArray(insertedOrders) ? insertedOrders[0] : insertedOrders;

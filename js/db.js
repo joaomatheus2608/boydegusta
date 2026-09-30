@@ -507,22 +507,32 @@
         delete apiPayload.id;
       }
 
-      try {
-        const result = await api('create-order', 'POST', apiPayload);
-        if (result?.data) {
-          newOrder = { ...newOrder, ...result.data, items: result.data.items || result.data.order_items || newOrder.items };
+      // Executa com até 3 tentativas para contornar instabilidade momentânea ou cold-start do servidor
+      let lastErr = null;
+      let result = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          result = await api('create-order', 'POST', apiPayload);
+          if (result?.data) break;
+        } catch (e) {
+          lastErr = e;
+          console.warn(`[db.createOrder] Tentativa ${attempt}/3 falhou:`, e);
+          if (attempt < 3) {
+            await new Promise(res => setTimeout(res, 500 * attempt));
+          }
         }
-      } catch (e) {
-        console.warn('Erro ao criar pedido via API:', e);
-        const orders = getStored(STORAGE_KEYS.ORDERS, []);
-        const nextOrderNumber = orders.length > 0 ? Math.max(...orders.map(o => Number(o.order_number) || 0)) + 1 : 1;
-        newOrder.id = generateUuidOrId('order');
-        newOrder.order_number = nextOrderNumber;
       }
 
-      const currentOrders = getStored(STORAGE_KEYS.ORDERS, []);
-      setStored(STORAGE_KEYS.ORDERS, [newOrder, ...currentOrders.filter(o => o.id !== newOrder.id)]);
-      return newOrder;
+      if (result?.data) {
+        newOrder = { ...newOrder, ...result.data, items: result.data.items || result.data.order_items || newOrder.items };
+        const currentOrders = getStored(STORAGE_KEYS.ORDERS, []);
+        setStored(STORAGE_KEYS.ORDERS, [newOrder, ...currentOrders.filter(o => o.id !== newOrder.id)]);
+        return newOrder;
+      }
+
+      // Se falhar após todas as tentativas, lança erro para alertar a interface e não gerar comanda fake repetida #0001
+      console.error('Falha definitiva ao criar pedido via API:', lastErr);
+      throw new Error(lastErr?.message || 'Não foi possível salvar o pedido no sistema. Verifique sua conexão e tente novamente.');
     },
 
     async updateOrderStatus(orderId, newStatus, paymentMethod, courierName) {

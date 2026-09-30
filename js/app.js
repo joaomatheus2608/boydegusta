@@ -1307,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.cart.clear();
     } catch (err) {
       console.error('Erro ao registrar pedido:', err);
-      alert('Ocorreu um erro ao registrar o pedido. Verifique sua conexão.');
+      alert(err.message || 'Ocorreu um erro ao registrar o pedido no sistema. Verifique sua conexão e tente novamente.');
     } finally {
       dom.btnConfirmOrder.disabled = false;
       dom.btnConfirmOrder.textContent = 'Confirmar e Enviar para WhatsApp';
