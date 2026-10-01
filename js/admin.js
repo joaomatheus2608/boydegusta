@@ -2192,6 +2192,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof optionals === 'string') {
       try { optionals = JSON.parse(optionals); } catch { optionals = []; }
     }
+    // Fallback: se optionals vazio, tenta extrair das notes ("Adicionais: ...")
+    if ((!Array.isArray(optionals) || optionals.length === 0) && i.notes && typeof i.notes === 'string') {
+      const adMatch = i.notes.match(/Adicionais:\s*([^|*]+)/i);
+      if (adMatch && adMatch[1]) {
+        optionals = adMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
     if (Array.isArray(optionals) && optionals.length > 0) {
       const optNames = optionals.map(o => {
         if (!o) return '';
@@ -2199,18 +2206,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         return window.escapeHtml(o.name || '');
       }).filter(Boolean);
       if (optNames.length > 0) {
-        detailsHtml += `<div class="item-detail" style="font-size: 14px; font-weight: 800; margin: 2px 0;">+ ${optNames.join(', ')}</div>`;
+        detailsHtml += `<div class="item-detail" style="font-size: 14px; font-weight: 800; margin: 4px auto; padding: 3px 6px; border: 1px dashed #333; display: inline-block;">➕ ADICIONAIS: ${optNames.join(' | ')}</div>`;
       }
     }
 
     // 5. Observações específicas do item
     if (i.notes && String(i.notes).trim()) {
       let cleanNotes = String(i.notes).trim();
-      // Remove partes que já foram renderizadas acima (Escolhas, Sabor, Versão)
+      // Remove partes que já foram renderizadas acima (Escolhas, Sabor, Versão, Adicionais)
       cleanNotes = cleanNotes
         .replace(/Escolhas:\s*[^|*]+/gi, '')
         .replace(/Sabor:\s*[^|*]+/gi, '')
         .replace(/Versão:\s*DUPLO/gi, '')
+        .replace(/Adicionais:\s*[^|*]+/gi, '')
         .replace(/Obs:\s*/gi, '')
         .replace(/\|\s*\|/g, '|')
         .replace(/^[\s|]+|[\s|]+$/g, '')

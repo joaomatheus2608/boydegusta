@@ -615,6 +615,12 @@ exports.handler = async function(event) {
               if (str) autoNotes.push(`Escolhas: ${str}`);
             }
             if (item.burger_version === 'duplo') autoNotes.push('Versão: DUPLO');
+            // Adicionais: salva os nomes nas notas como fallback legível
+            const optList = item.optionals || [];
+            if (Array.isArray(optList) && optList.length > 0) {
+              const optStr = optList.map(o => typeof o === 'string' ? o : (o.name || '')).filter(Boolean).join(', ');
+              if (optStr) autoNotes.push(`Adicionais: ${optStr}`);
+            }
             if (item.notes) autoNotes.push(item.notes);
 
             return {
@@ -652,6 +658,12 @@ exports.handler = async function(event) {
                 }
               }
               if (item.burger_version === 'duplo') autoNotes.push('Versão: DUPLO');
+              // Adicionais no fallback simplificado
+              const optList = item.optionals || [];
+              if (Array.isArray(optList) && optList.length > 0) {
+                const optStr = optList.map(o => typeof o === 'string' ? o : (o.name || '')).filter(Boolean).join(', ');
+                if (optStr) autoNotes.push(`Adicionais: ${optStr}`);
+              }
               if (item.notes) autoNotes.push(item.notes);
 
               return {
