@@ -314,8 +314,10 @@ exports.handler = async function(event) {
         customization_type: prod.customization_type ? String(prod.customization_type).trim() : 'none',
         customization_label: prod.customization_label ? String(prod.customization_label).trim() : null,
         customization_max_qty: (prod.customization_max_qty !== null && prod.customization_max_qty !== undefined && prod.customization_max_qty !== '') ? Number(prod.customization_max_qty) : 1,
+        customization_min_qty: (prod.customization_min_qty !== null && prod.customization_min_qty !== undefined && prod.customization_min_qty !== '') ? Number(prod.customization_min_qty) : 1,
         customization_options: Array.isArray(prod.customization_options) ? prod.customization_options : [],
         burger_type: prod.burger_type ? String(prod.burger_type).trim() : null,
+        sales_channel: prod.sales_channel ? String(prod.sales_channel).trim() : 'todos',
         order_index: Number(prod.order_index) || 0,
         updated_at: new Date().toISOString()
       };
@@ -346,6 +348,13 @@ exports.handler = async function(event) {
           promo_price: cleanPayload.promo_price,
           promo_label: cleanPayload.promo_label,
           monday_price: cleanPayload.monday_price,
+          customization_type: cleanPayload.customization_type,
+          customization_label: cleanPayload.customization_label,
+          customization_max_qty: cleanPayload.customization_max_qty,
+          customization_min_qty: cleanPayload.customization_min_qty,
+          customization_options: cleanPayload.customization_options,
+          burger_type: cleanPayload.burger_type,
+          sales_channel: cleanPayload.sales_channel,
           order_index: cleanPayload.order_index,
           updated_at: cleanPayload.updated_at
         };

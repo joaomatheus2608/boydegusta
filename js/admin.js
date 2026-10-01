@@ -3138,7 +3138,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (dom.dayPromoForm) {
     dom.dayPromoForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const prodId = dom.dayPromoProdId.value || dom.dayPromoProdSelect.value;
+      e.stopPropagation();
+
+      // Usa o select como fonte primária de verdade (valor imediato do usuário)
+      const prodId = dom.dayPromoProdSelect.value || dom.dayPromoProdId.value;
+
       if (!prodId) {
         alert('Por favor, selecione um produto.');
         return;
@@ -3152,11 +3156,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const regularPrice = Number(dom.dayPromoRegularPrice.value) || 0;
       const promoPrice = Number(dom.dayPromoPrice.value) || 0;
-      const promoLabel = dom.dayPromoLabel ? dom.dayPromoLabel.value.trim() : '';
       const is_promo = dom.dayPromoActive ? dom.dayPromoActive.value === 'true' : true;
+      const promoLabel = dom.dayPromoLabel ? dom.dayPromoLabel.value.trim() : '';
 
       const checkedDays = Array.from(document.querySelectorAll('input[name="dayPromoDayCheckbox"]:checked')).map(cb => Number(cb.value));
 
+      // Validações manuais (form tem novalidate)
+      if (regularPrice <= 0) { alert('Por favor, informe o preço normal do produto.'); return; }
+      if (is_promo && promoPrice <= 0) { alert('Por favor, informe o preço promocional.'); return; }
       if (checkedDays.length === 0 && is_promo) {
         alert('Selecione pelo menos um dia da semana para a promoção.');
         return;
@@ -3169,23 +3176,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       try {
-        prod.price = regularPrice;
-        prod.promo_price = promoPrice;
-        prod.promo_days = checkedDays;
-        prod.promo_label = promoLabel || null;
-        prod.is_promo = is_promo;
-        prod.monday_price = checkedDays.includes(1) ? promoPrice : null;
+        // Usa spread para não mutar o objeto original em adminState
+        const prodPayload = {
+          ...prod,
+          price: regularPrice,
+          promo_price: is_promo ? promoPrice : null,
+          promo_days: is_promo ? checkedDays : [],
+          promo_label: (is_promo && promoLabel) ? promoLabel : null,
+          is_promo: is_promo,
+          monday_price: (is_promo && checkedDays.includes(1)) ? promoPrice : null
+        };
 
-        const saved = await window.db.saveProduct(prod);
-        adminState.products = adminState.products.map(p => (String(p.id) === String(prodId) || String(p.id) === String(saved?.id)) ? (saved || prod) : p);
+        console.log('[dayPromoForm] Salvando:', prodPayload.name, 'dias:', prodPayload.promo_days, 'preço promo:', prodPayload.promo_price);
+
+        const saved = await window.db.saveProduct(prodPayload);
+        const savedProd = saved || prodPayload;
+
+        adminState.products = adminState.products.map(p =>
+          (String(p.id) === String(prodId) || String(p.id) === String(savedProd?.id)) ? savedProd : p
+        );
 
         dom.dayPromoModal.style.display = 'none';
         renderProducts();
         renderPromotions();
-        alert(`✅ Promoção de "${prod.name}" salva com sucesso!`);
+        alert(`✅ Promoção de "${prodPayload.name}" salva com sucesso!`);
       } catch (err) {
-        console.error('Erro ao salvar promoção do produto:', err);
-        alert('Erro ao salvar a promoção no banco de dados. Tente novamente.');
+        console.error('[dayPromoForm] Erro ao salvar promoção do produto:', err);
+        alert(`Erro ao salvar a promoção: ${err.message || 'Tente novamente.'}`);
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
