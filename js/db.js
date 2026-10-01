@@ -47,13 +47,31 @@
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
-      if (e.name === 'QuotaExceededError' || e.code === 22) {
-        console.warn(`[QuotaExceeded] Limite do localStorage atingido ao salvar ${key}.`);
-        if (key === STORAGE_KEYS.PRODUCTS && Array.isArray(data)) {
-          const stripped = data.map(p =>
-            (p.image_url && p.image_url.startsWith('data:image')) ? { ...p, image_url: 'boylogo.jpg' } : p
-          );
-          try { localStorage.setItem(key, JSON.stringify(stripped)); } catch {}
+      if (e.name === 'QuotaExceededError' || e.code === 22 || e.number === -2147024882) {
+        console.warn(`[QuotaExceeded] Limite do localStorage atingido ao salvar ${key}. Liberando espaço...`);
+        try {
+          // Se for ORDERS, mantém apenas os 50 mais recentes
+          if (key === STORAGE_KEYS.ORDERS && Array.isArray(data)) {
+            const trimmed = data.slice(0, 50);
+            localStorage.setItem(key, JSON.stringify(trimmed));
+            return;
+          }
+          // Se for CASH_CLOSINGS, mantém os 30 mais recentes
+          if (key === STORAGE_KEYS.CASH_CLOSINGS && Array.isArray(data)) {
+            const trimmed = data.slice(0, 30);
+            localStorage.setItem(key, JSON.stringify(trimmed));
+            return;
+          }
+          // Se for PRODUCTS, remove imagens base64 pesadas
+          if (key === STORAGE_KEYS.PRODUCTS && Array.isArray(data)) {
+            const stripped = data.map(p =>
+              (p.image_url && p.image_url.startsWith('data:image')) ? { ...p, image_url: 'boylogo.jpg' } : p
+            );
+            localStorage.setItem(key, JSON.stringify(stripped));
+            return;
+          }
+        } catch (innerErr) {
+          console.error('[setStored] Falha ao recuperar cota do localStorage:', innerErr);
         }
       }
     }
@@ -560,10 +578,10 @@
 
     async getTableActiveOrders(tableNumber) {
       const num = Number(tableNumber);
+      if (isNaN(num) || num <= 0) return [];
       const orders = await this.getOrders();
       const activeStatuses = ['novo', 'confirmado', 'em_preparo', 'pronto_para_retirada', 'saiu_para_entrega'];
       return orders.filter(o =>
-        (o.order_type === 'mesa' || o.table_number === num) &&
         Number(o.table_number) === num &&
         activeStatuses.includes(o.status)
       );
@@ -571,8 +589,13 @@
 
     async closeTable(tableNumber, paymentMethod = 'dinheiro') {
       const activeOrders = await this.getTableActiveOrders(tableNumber);
-      for (const order of activeOrders) {
-        await this.updateOrderStatus(order.id, 'finalizado', paymentMethod);
+      if (activeOrders.length === 0) return true;
+      const results = await Promise.allSettled(
+        activeOrders.map(order => this.updateOrderStatus(order.id, 'finalizado', paymentMethod))
+      );
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn(`[closeTable] ${failures.length} pedido(s) falharam na sincronização remota, mantidos sincronizados localmente.`);
       }
       return true;
     },

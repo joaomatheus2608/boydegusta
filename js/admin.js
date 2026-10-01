@@ -3,15 +3,15 @@
 // ========================================================
 
 // Retorna a data de expediente do restaurante (YYYY-MM-DD no horário local do Brasil).
-// Turnos/pedidos que avançam pela madrugada (antes das 05h da manhã) pertencem ao expediente do dia anterior!
+// Turnos/pedidos que avançam pela madrugada (antes das 07h da manhã) pertencem ao expediente do dia anterior!
 function getBusinessDateString(dateInput = new Date()) {
   if (!dateInput) return '';
   const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
   if (isNaN(d.getTime())) return '';
 
   const businessDate = new Date(d.getTime());
-  // Se o pedido foi feito na madrugada (entre 00:00 e 04:59), pertence ao expediente da noite anterior
-  if (businessDate.getHours() < 5) {
+  // Se o pedido ou fechamento foi feito na madrugada (entre 00:00 e 06:59), pertence ao expediente da noite anterior
+  if (businessDate.getHours() < 7) {
     businessDate.setDate(businessDate.getDate() - 1);
   }
 
