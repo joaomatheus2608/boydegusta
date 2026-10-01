@@ -607,6 +607,16 @@ exports.handler = async function(event) {
             if (typeof choicesList === 'string') {
               try { choicesList = JSON.parse(choicesList); } catch { choicesList = []; }
             }
+
+            let autoNotes = [];
+            if (item.flavor || item.custom_flavor) autoNotes.push(`Sabor: ${item.flavor || item.custom_flavor}`);
+            if (choicesList && choicesList.length > 0) {
+              const str = choicesList.map(c => typeof c === 'string' ? c : `${c.qty || 1}x ${c.name || ''}`).filter(Boolean).join(', ');
+              if (str) autoNotes.push(`Escolhas: ${str}`);
+            }
+            if (item.burger_version === 'duplo') autoNotes.push('Versão: DUPLO');
+            if (item.notes) autoNotes.push(item.notes);
+
             return {
               order_id: insertedOrder.id,
               product_id: /^[0-9a-f-]{36}$/i.test(item.id) ? item.id : null,
@@ -615,8 +625,8 @@ exports.handler = async function(event) {
               quantity: Number(item.quantity) || 1,
               subtotal: Number(item.subtotal) || ((Number(item.price || item.unit_price) || 0) * (Number(item.quantity) || 1)),
               optionals: item.optionals || [],
-              notes: item.notes || '',
-              is_combo: Boolean(item.is_combo),
+              notes: autoNotes.join(' | ') || item.notes || '',
+              is_combo: Boolean(item.is_combo || choicesList.length > 0),
               combo_choices: choicesList,
               flavor: item.flavor || item.custom_flavor || null,
               burger_version: item.burger_version || null
@@ -642,7 +652,7 @@ exports.handler = async function(event) {
                 }
               }
               if (item.burger_version === 'duplo') autoNotes.push('Versão: DUPLO');
-              if (item.notes) autoNotes.push(`Obs: ${item.notes}`);
+              if (item.notes) autoNotes.push(item.notes);
 
               return {
                 order_id: insertedOrder.id,

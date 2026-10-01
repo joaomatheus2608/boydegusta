@@ -2134,24 +2134,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!i) return '';
     let detailsHtml = '';
 
-    // Versão do hambúrguer (Duplo)
+    // 1. Versão do hambúrguer (Duplo)
     const bVersion = i.burger_version || '';
-    if (bVersion === 'duplo' || (i.name && i.name.includes('(Duplo)')) || (i.product_name && i.product_name.includes('(Duplo)'))) {
-      detailsHtml += `<div class="item-detail"><strong>🍔 VERSÃO: DUPLO (2x Carnes)</strong></div>`;
+    const hasDuplo = bVersion === 'duplo' || (i.name && i.name.includes('(Duplo)')) || (i.product_name && i.product_name.includes('(Duplo)')) || (i.notes && i.notes.includes('Versão: DUPLO'));
+    if (hasDuplo) {
+      detailsHtml += `<div class="item-detail" style="font-size: 15px; font-weight: 900; margin: 3px 0;">🍔 VERSÃO: DUPLO (2x Carnes)</div>`;
     }
 
-    // Sabor único
+    // 2. Sabor único (ex: Sucos, Pizzas de 1 sabor)
     let flv = i.flavor || i.custom_flavor || i.selected_flavor || i.sabor || '';
+    if (!flv && i.notes && typeof i.notes === 'string') {
+      const flvMatch = i.notes.match(/Sabor:\s*([^|*]+)/i);
+      if (flvMatch && flvMatch[1]) flv = flvMatch[1].trim();
+    }
     if (Array.isArray(flv)) flv = flv.filter(Boolean).join(', ');
     if (typeof flv === 'string' && flv.trim()) {
-      detailsHtml += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml(flv.toUpperCase())}</strong></div>`;
+      detailsHtml += `<div class="item-detail" style="font-size: 16px; font-weight: 900; margin: 3px auto; padding: 3px 6px; border: 2px solid #000; display: inline-block;">🥤 SABOR: ${window.escapeHtml(flv.toUpperCase())}</div>`;
     }
 
-    // Escolhas de combo / múltiplos sabores
+    // 3. Escolhas de combo / múltiplos sabores (ex: Combo 3 Hambúrgueres, Promoção)
     let comboChoices = i.combo_choices || i.customization_choices || i.selected_choices || [];
     if (typeof comboChoices === 'string') {
       try { comboChoices = JSON.parse(comboChoices); } catch { comboChoices = []; }
     }
+    // Se comboChoices estiver vazio, tenta extrair das observações (ex: "Escolhas: 3x Queijo")
+    if ((!Array.isArray(comboChoices) || comboChoices.length === 0) && i.notes && typeof i.notes === 'string') {
+      const choicesMatch = i.notes.match(/Escolhas:\s*([^|*]+)/i);
+      if (choicesMatch && choicesMatch[1]) {
+        const rawItems = choicesMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+        if (rawItems.length > 0) {
+          comboChoices = rawItems;
+        }
+      }
+    }
+
     if (Array.isArray(comboChoices) && comboChoices.length > 0) {
       const choicesFormatted = comboChoices.map(c => {
         if (!c) return '';
@@ -2162,11 +2178,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).filter(Boolean);
 
       if (choicesFormatted.length > 0) {
-        detailsHtml += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${choicesFormatted.join(', ')}</strong></div>`;
+        detailsHtml += `
+          <div class="item-detail" style="font-size: 15px; font-weight: 900; margin: 4px auto; padding: 4px 6px; border: 2px solid #000; background: #f8fafc; text-align: center;">
+            <div style="font-size: 13px; font-weight: 900; text-decoration: underline; margin-bottom: 2px;">🍔 ITENS / SABORES ESCOLHIDOS:</div>
+            ${choicesFormatted.map(ch => `<div style="font-size: 16px; font-weight: 900; margin: 2px 0;">👉 ${ch.toUpperCase()}</div>`).join('')}
+          </div>
+        `;
       }
     }
 
-    // Adicionais / Opcionais
+    // 4. Adicionais / Opcionais
     let optionals = i.optionals || [];
     if (typeof optionals === 'string') {
       try { optionals = JSON.parse(optionals); } catch { optionals = []; }
@@ -2178,13 +2199,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return window.escapeHtml(o.name || '');
       }).filter(Boolean);
       if (optNames.length > 0) {
-        detailsHtml += `<div class="item-detail"><strong>+ ${optNames.join(', ')}</strong></div>`;
+        detailsHtml += `<div class="item-detail" style="font-size: 14px; font-weight: 800; margin: 2px 0;">+ ${optNames.join(', ')}</div>`;
       }
     }
 
-    // Observações específicas do item
+    // 5. Observações específicas do item
     if (i.notes && String(i.notes).trim()) {
-      detailsHtml += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(String(i.notes).trim())} ***</strong></div>`;
+      let cleanNotes = String(i.notes).trim();
+      // Remove partes que já foram renderizadas acima (Escolhas, Sabor, Versão)
+      cleanNotes = cleanNotes
+        .replace(/Escolhas:\s*[^|*]+/gi, '')
+        .replace(/Sabor:\s*[^|*]+/gi, '')
+        .replace(/Versão:\s*DUPLO/gi, '')
+        .replace(/Obs:\s*/gi, '')
+        .replace(/\|\s*\|/g, '|')
+        .replace(/^[\s|]+|[\s|]+$/g, '')
+        .trim();
+
+      if (cleanNotes) {
+        detailsHtml += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(cleanNotes)} ***</strong></div>`;
+      }
     }
 
     return detailsHtml;
