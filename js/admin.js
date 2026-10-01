@@ -2798,7 +2798,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (dom.editProdCustomOptions) dom.editProdCustomOptions.value = Array.isArray(prod.customization_options) ? prod.customization_options.join('\n') : '';
 
       if (prod.image_url && dom.editProdImagePreviewWrap) {
-        dom.editProdImagePreview.src = prod.image_url;
+        // Usa CDN wsrv.nl para não consumir banda do Supabase no preview do admin
+        const previewUrl = window.optimizeImageUrl ? window.optimizeImageUrl(prod.image_url, { width: 300, quality: 70 }) : prod.image_url;
+        dom.editProdImagePreview.src = previewUrl;
         dom.editProdFileName.textContent = 'Imagem atual cadastrada';
         dom.editProdImagePreviewWrap.style.display = 'flex';
       } else if (dom.editProdImagePreviewWrap) {
@@ -2902,7 +2904,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           if (uploadedUrl) {
             dom.editProdImage.value = uploadedUrl;
-            if (dom.editProdImagePreview) dom.editProdImagePreview.src = uploadedUrl;
+            // Mantém o blob local para o preview (não consome banda do Supabase)
+            // O src já foi definido como blob em linha 2891, então não sobrescrevemos
             if (dom.editProdFileName) dom.editProdFileName.textContent = `✅ ${file.name} (Salvo na Nuvem)`;
           } else {
             console.warn('Upload na nuvem falhou, gerando versão otimizada...');
