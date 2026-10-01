@@ -1624,18 +1624,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       orderItems.forEach(it => {
         total += Number(it.subtotal) || 0;
         itemsRowsStr += `<div class="item-line">${it.quantity}x <strong>${window.escapeHtml(it.name || it.product_name)}</strong> - ${window.formatCurrency(it.subtotal)}</div>`;
-        if (it.flavor || it.custom_flavor) {
-          itemsRowsStr += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml((it.flavor || it.custom_flavor).toUpperCase())}</strong></div>`;
-        }
-        if (it.combo_choices && it.combo_choices.length > 0) {
-          itemsRowsStr += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${it.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
-        }
-        if (it.optionals && it.optionals.length > 0) {
-          itemsRowsStr += `<div class="item-detail"><strong>+ ${it.optionals.map(op => window.escapeHtml(op.name)).join(', ')}</strong></div>`;
-        }
-        if (it.notes) {
-          itemsRowsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(it.notes)} ***</strong></div>`;
-        }
+        itemsRowsStr += getItemPrintDetails(it);
       });
     });
 
@@ -1830,17 +1819,43 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (orderItems.length > 0) {
         orderItems.forEach(item => {
           let customNotes = '';
-          if (item.flavor || item.custom_flavor) {
-            customNotes += `<div style="color: #16a34a; font-weight: 700;">🥤 Sabor: ${window.escapeHtml((item.flavor || item.custom_flavor).toUpperCase())}</div>`;
+          const bVersion = item.burger_version || '';
+          if (bVersion === 'duplo' || (item.name && item.name.includes('(Duplo)')) || (item.product_name && item.product_name.includes('(Duplo)'))) {
+            customNotes += `<div style="color: #ec4899; font-weight: 800;">🍔 Versão: DUPLO</div>`;
           }
-          if (item.combo_choices && item.combo_choices.length > 0) {
-            customNotes += `<div style="color: #d97706; font-weight: 700;">🍔 Escolhas: ${item.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</div>`;
+          let flv = item.flavor || item.custom_flavor || item.selected_flavor || item.sabor || '';
+          if (Array.isArray(flv)) flv = flv.filter(Boolean).join(', ');
+          if (typeof flv === 'string' && flv.trim()) {
+            customNotes += `<div style="color: #16a34a; font-weight: 700;">🥤 Sabor: ${window.escapeHtml(flv.toUpperCase())}</div>`;
           }
-          if (item.optionals && item.optionals.length > 0) {
-            customNotes += `<div>Adicionais: ${item.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</div>`;
+          let comboChoices = item.combo_choices || item.customization_choices || item.selected_choices || [];
+          if (typeof comboChoices === 'string') {
+            try { comboChoices = JSON.parse(comboChoices); } catch { comboChoices = []; }
           }
-          if (item.notes) {
-            customNotes += `<div>Obs: ${window.escapeHtml(item.notes)}</div>`;
+          if (Array.isArray(comboChoices) && comboChoices.length > 0) {
+            const choicesFormatted = comboChoices.map(c => {
+              if (!c) return '';
+              if (typeof c === 'string') return window.escapeHtml(c);
+              const qty = Number(c.qty || c.count || c.quantity) || 1;
+              const name = window.escapeHtml(c.name || c.item_name || c.flavor || '');
+              return name ? `${qty}x ${name}` : '';
+            }).filter(Boolean);
+            if (choicesFormatted.length > 0) {
+              customNotes += `<div style="color: #d97706; font-weight: 700;">🍔 Escolhas: ${choicesFormatted.join(', ')}</div>`;
+            }
+          }
+          let optionals = item.optionals || [];
+          if (typeof optionals === 'string') {
+            try { optionals = JSON.parse(optionals); } catch { optionals = []; }
+          }
+          if (Array.isArray(optionals) && optionals.length > 0) {
+            const optNames = optionals.map(o => typeof o === 'string' ? window.escapeHtml(o) : window.escapeHtml(o.name || '')).filter(Boolean);
+            if (optNames.length > 0) {
+              customNotes += `<div>Adicionais: ${optNames.join(', ')}</div>`;
+            }
+          }
+          if (item.notes && String(item.notes).trim()) {
+            customNotes += `<div>Obs: ${window.escapeHtml(String(item.notes).trim())}</div>`;
           }
 
           itemsRows += `
@@ -2114,24 +2129,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Helper para formatar detalhes do item em impressões de cupons/comandas
+  function getItemPrintDetails(i) {
+    if (!i) return '';
+    let detailsHtml = '';
+
+    // Versão do hambúrguer (Duplo)
+    const bVersion = i.burger_version || '';
+    if (bVersion === 'duplo' || (i.name && i.name.includes('(Duplo)')) || (i.product_name && i.product_name.includes('(Duplo)'))) {
+      detailsHtml += `<div class="item-detail"><strong>🍔 VERSÃO: DUPLO (2x Carnes)</strong></div>`;
+    }
+
+    // Sabor único
+    let flv = i.flavor || i.custom_flavor || i.selected_flavor || i.sabor || '';
+    if (Array.isArray(flv)) flv = flv.filter(Boolean).join(', ');
+    if (typeof flv === 'string' && flv.trim()) {
+      detailsHtml += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml(flv.toUpperCase())}</strong></div>`;
+    }
+
+    // Escolhas de combo / múltiplos sabores
+    let comboChoices = i.combo_choices || i.customization_choices || i.selected_choices || [];
+    if (typeof comboChoices === 'string') {
+      try { comboChoices = JSON.parse(comboChoices); } catch { comboChoices = []; }
+    }
+    if (Array.isArray(comboChoices) && comboChoices.length > 0) {
+      const choicesFormatted = comboChoices.map(c => {
+        if (!c) return '';
+        if (typeof c === 'string') return window.escapeHtml(c);
+        const qty = Number(c.qty || c.count || c.quantity) || 1;
+        const name = window.escapeHtml(c.name || c.item_name || c.flavor || '');
+        return name ? `${qty}x ${name}` : '';
+      }).filter(Boolean);
+
+      if (choicesFormatted.length > 0) {
+        detailsHtml += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${choicesFormatted.join(', ')}</strong></div>`;
+      }
+    }
+
+    // Adicionais / Opcionais
+    let optionals = i.optionals || [];
+    if (typeof optionals === 'string') {
+      try { optionals = JSON.parse(optionals); } catch { optionals = []; }
+    }
+    if (Array.isArray(optionals) && optionals.length > 0) {
+      const optNames = optionals.map(o => {
+        if (!o) return '';
+        if (typeof o === 'string') return window.escapeHtml(o);
+        return window.escapeHtml(o.name || '');
+      }).filter(Boolean);
+      if (optNames.length > 0) {
+        detailsHtml += `<div class="item-detail"><strong>+ ${optNames.join(', ')}</strong></div>`;
+      }
+    }
+
+    // Observações específicas do item
+    if (i.notes && String(i.notes).trim()) {
+      detailsHtml += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(String(i.notes).trim())} ***</strong></div>`;
+    }
+
+    return detailsHtml;
+  }
+
   function printOrderTicket(order) {
     const printWindow = window.open('', '_blank', 'width=320,height=400');
     let itemsStr = '';
     const orderItems = order.items || order.order_items || [];
     orderItems.forEach(i => {
       itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong> - ${window.formatCurrency(i.subtotal)}</div>`;
-      if (i.flavor || i.custom_flavor) {
-        itemsStr += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml((i.flavor || i.custom_flavor).toUpperCase())}</strong></div>`;
-      }
-      if (i.combo_choices && i.combo_choices.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
-      }
-      if (i.optionals && i.optionals.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
-      }
-      if (i.notes) {
-        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
-      }
+      itemsStr += getItemPrintDetails(i);
     });
 
     let typeStr = 'RETIRADA';
@@ -2227,18 +2292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const orderItems = order.items || order.order_items || [];
     orderItems.forEach(i => {
       itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong></div>`;
-      if (i.flavor || i.custom_flavor) {
-        itemsStr += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml((i.flavor || i.custom_flavor).toUpperCase())}</strong></div>`;
-      }
-      if (i.combo_choices && i.combo_choices.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
-      }
-      if (i.optionals && i.optionals.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
-      }
-      if (i.notes) {
-        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
-      }
+      itemsStr += getItemPrintDetails(i);
     });
 
     let typeStr = 'RETIRADA';
@@ -2323,18 +2377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const orderItems = order.items || order.order_items || [];
     orderItems.forEach(i => {
       itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong> — ${window.formatCurrency(i.subtotal)}</div>`;
-      if (i.flavor || i.custom_flavor) {
-        itemsStr += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml((i.flavor || i.custom_flavor).toUpperCase())}</strong></div>`;
-      }
-      if (i.combo_choices && i.combo_choices.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
-      }
-      if (i.optionals && i.optionals.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
-      }
-      if (i.notes) {
-        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
-      }
+      itemsStr += getItemPrintDetails(i);
     });
 
     const addr = order.delivery_address;
@@ -2422,18 +2465,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const orderItems = order.items || order.order_items || [];
     orderItems.forEach(i => {
       itemsStr += `<div class="item-line">${i.quantity}x <strong>${window.escapeHtml(i.name || i.product_name)}</strong> — ${window.formatCurrency(i.subtotal)}</div>`;
-      if (i.flavor || i.custom_flavor) {
-        itemsStr += `<div class="item-detail"><strong>🥤 SABOR: ${window.escapeHtml((i.flavor || i.custom_flavor).toUpperCase())}</strong></div>`;
-      }
-      if (i.combo_choices && i.combo_choices.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>🍔 ESCOLHAS: ${i.combo_choices.map(c => `${c.qty}x ${window.escapeHtml(c.name)}`).join(', ')}</strong></div>`;
-      }
-      if (i.optionals && i.optionals.length > 0) {
-        itemsStr += `<div class="item-detail"><strong>+ ${i.optionals.map(o => window.escapeHtml(o.name)).join(', ')}</strong></div>`;
-      }
-      if (i.notes) {
-        itemsStr += `<div class="item-obs"><strong>*** OBS: ${window.escapeHtml(i.notes)} ***</strong></div>`;
-      }
+      itemsStr += getItemPrintDetails(i);
     });
 
     let typeStr = 'RETIRADA NO LOCAL';

@@ -602,34 +602,60 @@ exports.handler = async function(event) {
 
       if (insertedOrder?.id && items?.length > 0) {
         try {
-          const orderItems = items.map(item => ({
-            order_id: insertedOrder.id,
-            product_id: /^[0-9a-f-]{36}$/i.test(item.id) ? item.id : null,
-            product_name: item.name || item.product_name,
-            unit_price: Number(item.price || item.unit_price) || 0,
-            quantity: Number(item.quantity) || 1,
-            subtotal: Number(item.subtotal) || ((Number(item.price || item.unit_price) || 0) * (Number(item.quantity) || 1)),
-            optionals: item.optionals || [],
-            notes: item.notes || '',
-            is_combo: Boolean(item.is_combo),
-            combo_choices: item.combo_choices || []
-          }));
+          const orderItems = items.map(item => {
+            let choicesList = item.combo_choices || [];
+            if (typeof choicesList === 'string') {
+              try { choicesList = JSON.parse(choicesList); } catch { choicesList = []; }
+            }
+            return {
+              order_id: insertedOrder.id,
+              product_id: /^[0-9a-f-]{36}$/i.test(item.id) ? item.id : null,
+              product_name: item.name || item.product_name,
+              unit_price: Number(item.price || item.unit_price) || 0,
+              quantity: Number(item.quantity) || 1,
+              subtotal: Number(item.subtotal) || ((Number(item.price || item.unit_price) || 0) * (Number(item.quantity) || 1)),
+              optionals: item.optionals || [],
+              notes: item.notes || '',
+              is_combo: Boolean(item.is_combo),
+              combo_choices: choicesList,
+              flavor: item.flavor || item.custom_flavor || null,
+              burger_version: item.burger_version || null
+            };
+          });
           const insertedItems = await supabaseFetch('/order_items', {
             method: 'POST', body: JSON.stringify(orderItems)
           });
-          insertedOrder.items = insertedItems || [];
+          insertedOrder.items = insertedItems || items;
           insertedOrder.order_items = insertedOrder.items;
         } catch (itemErr) {
-          console.warn('Falha ao salvar itens detalhados do pedido, tentando itens simplificados:', itemErr.message);
+          console.warn('Falha ao salvar itens detalhados do pedido, tentando itens simplificados com notas:', itemErr.message);
           try {
-            const simpleItems = items.map(item => ({
-              order_id: insertedOrder.id,
-              product_name: item.name || item.product_name || 'Item',
-              unit_price: Number(item.price || item.unit_price) || 0,
-              quantity: Number(item.quantity) || 1,
-              subtotal: Number(item.subtotal) || 0
-            }));
+            const simpleItems = items.map(item => {
+              let autoNotes = [];
+              if (item.flavor || item.custom_flavor) autoNotes.push(`Sabor: ${item.flavor || item.custom_flavor}`);
+              if (item.combo_choices) {
+                let cc = item.combo_choices;
+                if (typeof cc === 'string') { try { cc = JSON.parse(cc); } catch { cc = []; } }
+                if (Array.isArray(cc) && cc.length > 0) {
+                  const str = cc.map(c => typeof c === 'string' ? c : `${c.qty || 1}x ${c.name || ''}`).filter(Boolean).join(', ');
+                  if (str) autoNotes.push(`Escolhas: ${str}`);
+                }
+              }
+              if (item.burger_version === 'duplo') autoNotes.push('Versão: DUPLO');
+              if (item.notes) autoNotes.push(`Obs: ${item.notes}`);
+
+              return {
+                order_id: insertedOrder.id,
+                product_name: item.name || item.product_name || 'Item',
+                unit_price: Number(item.price || item.unit_price) || 0,
+                quantity: Number(item.quantity) || 1,
+                subtotal: Number(item.subtotal) || 0,
+                notes: autoNotes.join(' | ')
+              };
+            });
             await supabaseFetch('/order_items', { method: 'POST', body: JSON.stringify(simpleItems) });
+            insertedOrder.items = items;
+            insertedOrder.order_items = items;
           } catch {}
         }
       }
