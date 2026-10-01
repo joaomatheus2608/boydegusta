@@ -3144,8 +3144,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const prod = adminState.products.find(p => p.id === prodId);
-      if (!prod) return;
+      const prod = adminState.products.find(p => String(p.id) === String(prodId));
+      if (!prod) {
+        alert('Produto selecionado não foi encontrado na lista.');
+        return;
+      }
 
       const regularPrice = Number(dom.dayPromoRegularPrice.value) || 0;
       const promoPrice = Number(dom.dayPromoPrice.value) || 0;
@@ -3159,19 +3162,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      prod.price = regularPrice;
-      prod.promo_price = promoPrice;
-      prod.promo_days = checkedDays;
-      prod.promo_label = promoLabel || null;
-      prod.is_promo = is_promo;
-      prod.monday_price = checkedDays.includes(1) ? promoPrice : null;
+      const submitBtn = dom.dayPromoForm.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Salvando promoção...';
+      }
 
-      const saved = await window.db.saveProduct(prod);
-      adminState.products = adminState.products.map(p => p.id === prodId ? saved : p);
+      try {
+        prod.price = regularPrice;
+        prod.promo_price = promoPrice;
+        prod.promo_days = checkedDays;
+        prod.promo_label = promoLabel || null;
+        prod.is_promo = is_promo;
+        prod.monday_price = checkedDays.includes(1) ? promoPrice : null;
 
-      dom.dayPromoModal.style.display = 'none';
-      renderProducts();
-      renderPromotions();
+        const saved = await window.db.saveProduct(prod);
+        adminState.products = adminState.products.map(p => (String(p.id) === String(prodId) || String(p.id) === String(saved?.id)) ? (saved || prod) : p);
+
+        dom.dayPromoModal.style.display = 'none';
+        renderProducts();
+        renderPromotions();
+        alert(`✅ Promoção de "${prod.name}" salva com sucesso!`);
+      } catch (err) {
+        console.error('Erro ao salvar promoção do produto:', err);
+        alert('Erro ao salvar a promoção no banco de dados. Tente novamente.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fi fi-sr-disk"></i> Salvar Promoção';
+        }
+      }
     });
   }
 

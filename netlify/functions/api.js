@@ -332,7 +332,7 @@ exports.handler = async function(event) {
           });
         }
       } catch (err) {
-        console.warn('Falha ao salvar produto completo no Supabase, tentando campos padrão:', err.message);
+        console.warn('Falha ao salvar produto completo no Supabase, tentando com campos seguros preservando promoção:', err.message);
         const safePayload = {
           name: cleanPayload.name,
           category_id: cleanPayload.category_id,
@@ -342,17 +342,35 @@ exports.handler = async function(event) {
           is_available: cleanPayload.is_available,
           is_active: cleanPayload.is_active,
           is_promo: cleanPayload.is_promo,
+          promo_days: cleanPayload.promo_days,
+          promo_price: cleanPayload.promo_price,
+          promo_label: cleanPayload.promo_label,
+          monday_price: cleanPayload.monday_price,
           order_index: cleanPayload.order_index,
           updated_at: cleanPayload.updated_at
         };
-        if (isExistingUuid) {
-          data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
-            method: 'PATCH', body: JSON.stringify(safePayload)
-          });
-        } else {
-          data = await supabaseFetch('/products', {
-            method: 'POST', body: JSON.stringify(safePayload)
-          });
+        try {
+          if (isExistingUuid) {
+            data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
+              method: 'PATCH', body: JSON.stringify(safePayload)
+            });
+          } else {
+            data = await supabaseFetch('/products', {
+              method: 'POST', body: JSON.stringify(safePayload)
+            });
+          }
+        } catch (err2) {
+          console.warn('Tentando salvar com promo_days serializado:', err2.message);
+          safePayload.promo_days = JSON.stringify(cleanPayload.promo_days || []);
+          if (isExistingUuid) {
+            data = await supabaseFetch(`/products?id=eq.${prod.id}`, {
+              method: 'PATCH', body: JSON.stringify(safePayload)
+            });
+          } else {
+            data = await supabaseFetch('/products', {
+              method: 'POST', body: JSON.stringify(safePayload)
+            });
+          }
         }
       }
       return respond(200, { data: Array.isArray(data) ? data[0] : data });
