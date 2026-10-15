@@ -1879,8 +1879,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (order.order_type === 'delivery') {
         typeBadge = `<span class="order-type-badge delivery"><i class="fi fi-sr-motorcycle"></i> Delivery</span>`;
         if (order.delivery_address) {
-          const a = order.delivery_address;
-          addressDisplay = `${window.escapeHtml(a.street || '')}, ${window.escapeHtml(String(a.number || ''))}${a.complement ? ` - ${window.escapeHtml(a.complement)}` : ''}, ${window.escapeHtml(a.neighborhood || '')} (Ref: ${window.escapeHtml(a.reference || 'Nenhuma')})`;
+          let a = order.delivery_address;
+          if (typeof a === 'string') {
+            try { a = JSON.parse(a); } catch (e) {}
+          }
+          const aRef = (a && (a.reference || a.referencia || a.ponto_referencia || a.ref)) || order.reference || order.ponto_referencia || '';
+          addressDisplay = `${window.escapeHtml(a?.street || '')}, ${window.escapeHtml(String(a?.number || ''))}${a?.complement ? ` - ${window.escapeHtml(a.complement)}` : ''}, ${window.escapeHtml(a?.neighborhood || '')} (Ref: ${window.escapeHtml(aRef || 'Nenhuma')})`;
         }
       } else {
         typeBadge = `<span class="order-type-badge pickup"><i class="fi fi-sr-shop"></i> Retirada</span>`;
@@ -2250,6 +2254,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       typeStr = 'DELIVERY / ENTREGA';
     }
 
+    let addr = order.delivery_address;
+    if (typeof addr === 'string') {
+      try { addr = JSON.parse(addr); } catch (e) {}
+    }
+    const street = addr?.street || '';
+    const number = addr?.number ? String(addr.number) : '';
+    const neighborhood = addr?.neighborhood || '';
+    const complement = addr?.complement || addr?.complemento || '';
+    const reference = (addr && (addr.reference || addr.referencia || addr.ponto_referencia || addr.ref)) || order.reference || order.ponto_referencia || '';
+    const addrStr = addr
+      ? `${window.escapeHtml(street)}, ${window.escapeHtml(number)} - ${window.escapeHtml(neighborhood)}${complement ? ` (${window.escapeHtml(complement)})` : ''}`
+      : '';
+
     printWindow.document.write(`
       <html>
         <head>
@@ -2306,7 +2323,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <hr />
             <div class="info"><strong>Cliente:</strong> ${window.escapeHtml(order.customer_name || 'Cliente')}</div>
             <div class="info"><strong>Fone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
-            ${order.delivery_address ? `<div class="info"><strong>End.:</strong> ${window.escapeHtml(order.delivery_address.street || '')}, ${window.escapeHtml(String(order.delivery_address.number || ''))} - ${window.escapeHtml(order.delivery_address.neighborhood || '')}</div>` : ''}
+            ${addrStr ? `<div class="info"><strong>End.:</strong> ${addrStr}</div>` : ''}
+            ${reference ? `<div class="info"><strong>Ponto de Ref.:</strong> ${window.escapeHtml(reference)}</div>` : ''}
             <div class="info"><strong>Pgto:</strong> ${window.escapeHtml(order.payment_method || '')} ${order.change_for ? `(Troco: ${window.formatCurrency(order.change_for)})` : ''}</div>
             ${order.notes ? `<div class="item-obs"><strong>*** OBS GERAL: ${window.escapeHtml(order.notes)} ***</strong></div>` : ''}
             <hr />
@@ -2422,9 +2440,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       itemsStr += getItemPrintDetails(i);
     });
 
-    const addr = order.delivery_address;
+    let addr = order.delivery_address;
+    if (typeof addr === 'string') {
+      try { addr = JSON.parse(addr); } catch (e) {}
+    }
+    const street = addr?.street || '';
+    const number = addr?.number ? String(addr.number) : '';
+    const neighborhood = addr?.neighborhood || '';
+    const complement = addr?.complement || addr?.complemento || '';
+    const reference = (addr && (addr.reference || addr.referencia || addr.ponto_referencia || addr.ref)) || order.reference || order.ponto_referencia || '';
+
     const addrStr = addr
-      ? `${window.escapeHtml(addr.street || '')}, ${window.escapeHtml(String(addr.number || ''))} — ${window.escapeHtml(addr.neighborhood || '')}${addr.complement ? ` (${window.escapeHtml(addr.complement)})` : ''}`
+      ? `${window.escapeHtml(street)}, ${window.escapeHtml(number)} — ${window.escapeHtml(neighborhood)}${complement ? ` (${window.escapeHtml(complement)})` : ''}`
       : 'Endereço não informado';
 
     printWindow.document.write(`
@@ -2479,6 +2506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="info-big">${window.escapeHtml(order.customer_name || 'Cliente')}</div>
             <div class="info"><strong>Fone:</strong> ${window.escapeHtml(order.customer_phone || 'Não informado')}</div>
             <div class="info"><strong>End.:</strong> ${addrStr}</div>
+            ${reference ? `<div class="info"><strong>Ponto de Ref.:</strong> ${window.escapeHtml(reference)}</div>` : ''}
             ${order.courier_name ? `<div class="info"><strong>Entregador:</strong> ${window.escapeHtml(order.courier_name)}</div>` : ''}
             <hr />
             ${itemsStr}
