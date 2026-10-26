@@ -203,7 +203,9 @@
           if (d.categories && Array.isArray(d.categories)) setStored(STORAGE_KEYS.CATEGORIES, d.categories);
           if (d.products && Array.isArray(d.products)) setStored(STORAGE_KEYS.PRODUCTS, d.products);
           if (d.optionals && Array.isArray(d.optionals)) setStored(STORAGE_KEYS.OPTIONALS, d.optionals);
-          if (d.promotions && Array.isArray(d.promotions)) setStored(STORAGE_KEYS.PROMOTIONS, d.promotions);
+          // SEMPRE sincroniza promoções do servidor, mesmo se vier vazio — evita que promoções
+          // deletadas no admin continuem aparecendo para clientes com cache antigo no localStorage.
+          if (Array.isArray(d.promotions)) setStored(STORAGE_KEYS.PROMOTIONS, d.promotions);
           if (d.neighborhoods && Array.isArray(d.neighborhoods)) setStored(STORAGE_KEYS.NEIGHBORHOODS, d.neighborhoods);
 
           // Garante que entregadores nunca fiquem vazios mesclando remotos com seed e local
