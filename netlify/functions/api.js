@@ -502,10 +502,12 @@ exports.handler = async function(event) {
     if (method === 'POST' && path === 'create-order') {
       const { items, ...orderData } = body;
 
-      // Obtém os maiores order_number atuais no banco para calcular o próximo sequencial
+      // Obtém o maior order_number atual no banco para calcular o próximo sequencial
+      // IMPORTANTE: filtra NULLs direto na query (?not.is=null) para evitar que o PostgreSQL
+      // coloque NULL primeiro no ORDER BY ... DESC, zerando o contador para #0001.
       let nextOrderNumber = 1;
       try {
-        const lastOrders = await supabaseFetch('/orders?select=order_number&order=order_number.desc&limit=10');
+        const lastOrders = await supabaseFetch('/orders?select=order_number&order_number=not.is.null&order=order_number.desc&limit=20');
         if (Array.isArray(lastOrders) && lastOrders.length > 0) {
           const validNums = lastOrders
             .map(o => Number(o.order_number))
@@ -513,9 +515,12 @@ exports.handler = async function(event) {
           const maxOrderNumber = validNums.length > 0 ? Math.max(...validNums) : 0;
           nextOrderNumber = maxOrderNumber + 1;
         }
+        // Se o banco retornou vazio (sem pedidos válidos), nextOrderNumber fica em 1 — ok para banco novo.
       } catch (e) {
         console.warn('Erro ao consultar maior order_number:', e);
-        nextOrderNumber = Number(orderData.order_number) || Math.floor(Date.now() / 1000) % 10000;
+        // Fallback: usa o order_number enviado pelo cliente (se válido) ou timestamp
+        const clientNum = Number(orderData.order_number);
+        nextOrderNumber = (clientNum > 0) ? clientNum : Math.floor(Date.now() / 1000) % 10000;
       }
 
       // Normaliza payment_method para atender ao check constraint do PostgreSQL
@@ -579,7 +584,8 @@ exports.handler = async function(event) {
           lastInsertErr = err;
           console.warn(`Tentativa ${attempt}/5 de inserir pedido falhou (${err.message}). Recalculando order_number...`);
           try {
-            const freshOrders = await supabaseFetch('/orders?select=order_number&order=order_number.desc&limit=10');
+            // Filtra NULLs na query para evitar o bug de NULL FIRST no PostgreSQL
+            const freshOrders = await supabaseFetch('/orders?select=order_number&order_number=not.is.null&order=order_number.desc&limit=20');
             if (Array.isArray(freshOrders) && freshOrders.length > 0) {
               const nums = freshOrders.map(o => Number(o.order_number)).filter(n => !isNaN(n) && n > 0);
               const maxNum = nums.length > 0 ? Math.max(...nums) : 0;

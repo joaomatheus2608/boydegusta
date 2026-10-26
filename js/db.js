@@ -531,17 +531,22 @@
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           result = await api('create-order', 'POST', apiPayload);
-          if (result?.data) break;
+          // CRÍTICO: valida que a resposta contém um order_number válido (> 0).
+          // Se vier sem order_number, o WhatsApp abriria com #0000 ou número antigo do localStorage.
+          if (result?.data && Number(result.data.order_number) > 0) break;
+          if (result?.data) {
+            console.warn(`[db.createOrder] Tentativa ${attempt}/3: servidor retornou pedido sem order_number válido (${result.data.order_number}). Descartando e tentando novamente...`);
+            lastErr = new Error('Servidor retornou pedido sem número de comanda válido.');
+            result = null;
+          }
         } catch (e) {
           lastErr = e;
           console.warn(`[db.createOrder] Tentativa ${attempt}/3 falhou:`, e);
-          if (attempt < 3) {
-            await new Promise(res => setTimeout(res, 500 * attempt));
-          }
         }
+        if (attempt < 3) await new Promise(res => setTimeout(res, 500 * attempt));
       }
 
-      if (result?.data) {
+      if (result?.data && Number(result.data.order_number) > 0) {
         newOrder = { ...newOrder, ...result.data, items: result.data.items || result.data.order_items || newOrder.items };
         const currentOrders = getStored(STORAGE_KEYS.ORDERS, []);
         setStored(STORAGE_KEYS.ORDERS, [newOrder, ...currentOrders.filter(o => o.id !== newOrder.id)]);
