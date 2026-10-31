@@ -564,9 +564,19 @@ exports.handler = async function(event) {
         updated_at: new Date().toISOString()
       };
 
-      // Só envia user_id se for um UUID válido de 36 caracteres (evita erro de sintaxe UUID no PostgreSQL)
+      // Só envia user_id se for um UUID válido E se o usuário existir na tabela users.
+      // Caso contrário, omite para evitar violação da FK "orders_user_id_fkey".
       if (orderData.user_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderData.user_id)) {
-        cleanOrderPayload.user_id = orderData.user_id;
+        try {
+          const userCheck = await supabaseFetch(`/users?id=eq.${orderData.user_id}&select=id&limit=1`);
+          if (Array.isArray(userCheck) && userCheck.length > 0) {
+            cleanOrderPayload.user_id = orderData.user_id;
+          } else {
+            console.warn(`[create-order] user_id ${orderData.user_id} não encontrado na tabela users. Pedido será criado sem vínculo de usuário.`);
+          }
+        } catch (userCheckErr) {
+          console.warn('[create-order] Falha ao verificar user_id, omitindo para evitar erro de FK:', userCheckErr.message);
+        }
       }
 
       // Loop de inserção com até 5 tentativas e resolução de concorrência/colisão de order_number
