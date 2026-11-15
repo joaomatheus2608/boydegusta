@@ -675,7 +675,7 @@ const INITIAL_SETTINGS_VILARICA = {
   id: 'store-settings-vilarica',
   store_id: 'vilarica',
   name: 'Boy Degusta na Brasa — Vila Rica',
-  address: 'Unidade Vila Rica — Jaboatão dos Guararapes - PE',
+  address: 'Próximo a Rua Barão de Moreno, Vila Rica - Jaboatão dos Guararapes - PE, 54100-439',
   whatsapp: '5581992686946',
   instagram: '@boydegusta',
   delivery_fee: 5.00,

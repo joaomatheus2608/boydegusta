@@ -204,6 +204,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       setupEventListeners();
       setupPhoneMasks();
 
+      // Atualiza endereços dinâmicos por loja
+      const storeAddress = state.settings?.address || '';
+      const footerAddr = document.getElementById('footerStoreAddress');
+      const pickupAddrText = document.getElementById('pickupAddressText');
+      if (activeStore === 'vilarica' && storeAddress) {
+        if (footerAddr) footerAddr.innerHTML = storeAddress.replace(/ - /g, '<br />').replace(/, /g, ',<br />');
+        if (pickupAddrText) pickupAddrText.innerHTML = storeAddress.replace(/ - /g, '<br />').replace(/, /g, ',<br />');
+      }
+
       // Intervalo de verificação da loja a cada 1 minuto
       setInterval(checkStoreStatus, 60000);
     } catch (err) {
