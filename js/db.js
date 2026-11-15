@@ -273,7 +273,13 @@
       if (activeStore === 'vilarica') {
         const vrSettings = getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
         const vrCategories = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
-        const vrProducts = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
+        const vrProductsRaw = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
+        // Migração: substituir URLs Unsplash/wsrv por boylogo.jpg
+        const vrProducts = vrProductsRaw.map(p => ({
+          ...p,
+          image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg')
+        }));
+        setStored('boydegusta_vr_products', vrProducts);
         const vrOptionals = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
         const vrHours = getStored('boydegusta_vr_hours', window.INITIAL_OPERATING_HOURS);
         const vrNeighborhoods = getStored('boydegusta_vr_neighborhoods', window.INITIAL_NEIGHBORHOODS || []);

@@ -1621,11 +1621,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.btnSubmitPosOrder.textContent = '⏳ Gravando pedido...';
 
     try {
-      await window.db.createOrder(orderPayload);
+      await window.db.createOrder(orderPayload, currentAdminStore);
       dom.posOrderModal.style.display = 'none';
       adminState.posCart = [];
       
-      adminState.orders = await window.db.getOrders();
+      adminState.orders = await window.db.getOrders(currentAdminStore);
       renderSalonTables();
       renderOrders();
       renderDashboard();
@@ -1817,7 +1817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         await window.db.closeTable(tableNum, payment);
         dom.tableDetailsModal.style.display = 'none';
-        adminState.orders = await window.db.getOrders();
+        adminState.orders = await window.db.getOrders(currentAdminStore);
         renderSalonTables();
         renderOrders();
         renderDashboard();
@@ -1842,7 +1842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   dom.btnRefreshPos.addEventListener('click', async () => {
-    adminState.orders = await window.db.getOrders();
+    adminState.orders = await window.db.getOrders(currentAdminStore);
     renderSalonTables();
     renderOrders();
   });
@@ -2110,7 +2110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           newStatus = 'finalizado';
         }
 
-        await window.db.updateOrderStatus(orderId, newStatus);
+        await window.db.updateOrderStatus(orderId, newStatus, null, null, currentAdminStore);
         if (order) order.status = newStatus;
         renderSalonTables();
         renderDashboard();
@@ -2188,7 +2188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.dispatchCouriersList.querySelectorAll('.courier-pick-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const courierName = btn.getAttribute('data-courier-name');
-        await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, courierName);
+        await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, courierName, currentAdminStore);
         order.status = 'saiu_para_entrega';
         order.courier_name = courierName;
         
@@ -2221,7 +2221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { await window.db.saveCourier(newC); } catch {}
       }
 
-      await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, customCourier);
+      await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, customCourier, currentAdminStore);
       order.status = 'saiu_para_entrega';
       order.courier_name = customCourier;
       dom.dispatchCourierModal.style.display = 'none';
@@ -2239,7 +2239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const orderId = dom.dispatchOrderId.value;
     const order = adminState.orders.find(o => o.id === orderId);
     if (order) {
-      await window.db.updateOrderStatus(orderId, 'saiu_para_entrega');
+      await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, null, currentAdminStore);
       order.status = 'saiu_para_entrega';
       dom.dispatchCourierModal.style.display = 'none';
       renderOrders();
@@ -2826,7 +2826,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const prod = adminState.products.find(p => p.id === id);
         if (prod) {
           prod.is_available = !prod.is_available;
-          await window.db.saveProduct(prod);
+          await window.db.saveProduct(prod, currentAdminStore);
           renderProducts();
         }
       });
@@ -2850,7 +2850,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-prod-id');
         if (confirm('Tem certeza que deseja excluir este produto?')) {
-          await window.db.deleteProduct(id);
+          await window.db.deleteProduct(id, currentAdminStore);
           adminState.products = adminState.products.filter(p => p.id !== id);
           renderProducts();
         }
@@ -3135,7 +3135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       if (id) payload.id = id;
 
-      const saved = await window.db.saveProduct(payload);
+      const saved = await window.db.saveProduct(payload, currentAdminStore);
       
       if (id) {
         adminState.products = adminState.products.map(p => p.id === id ? saved : p);
@@ -3144,7 +3144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Sincroniza lista atualizada
-      const refreshed = await window.db.getProducts();
+      const refreshed = await window.db.getProducts(currentAdminStore);
       if (Array.isArray(refreshed) && refreshed.length > 0) {
         adminState.products = refreshed;
       }
@@ -3206,7 +3206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-cat-id');
         if (confirm('Tem certeza que deseja excluir esta categoria?')) {
-          await window.db.deleteCategory(id);
+          await window.db.deleteCategory(id, currentAdminStore);
           adminState.categories = adminState.categories.filter(c => c.id !== id);
           renderCategories();
           renderProducts();
@@ -3249,7 +3249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const payload = { name, order_index, is_active };
       if (id) payload.id = id;
 
-      const saved = await window.db.saveCategory(payload);
+      const saved = await window.db.saveCategory(payload, currentAdminStore);
       if (id) {
         adminState.categories = adminState.categories.map(c => c.id === id ? saved : c);
       } else {
@@ -3345,7 +3345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         prod.promo_price = null;
         prod.promo_label = null;
         prod.monday_price = null;
-        const saved = await window.db.saveProduct(prod);
+        const saved = await window.db.saveProduct(prod, currentAdminStore);
         adminState.products = adminState.products.map(p => p.id === prodId ? saved : p);
         renderProducts();
         renderPromotions();
@@ -3408,7 +3408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log('[dayPromoForm] Salvando:', prodPayload.name, 'dias:', prodPayload.promo_days, 'preço promo:', prodPayload.promo_price);
 
-        const saved = await window.db.saveProduct(prodPayload);
+        const saved = await window.db.saveProduct(prodPayload, currentAdminStore);
         const savedProd = saved || prodPayload;
 
         adminState.products = adminState.products.map(p =>
@@ -3572,7 +3572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           prod.promo_price = null;
           prod.promo_label = null;
           prod.monday_price = null;
-          const saved = await window.db.saveProduct(prod);
+          const saved = await window.db.saveProduct(prod, currentAdminStore);
           adminState.products = adminState.products.map(p => p.id === id ? saved : p);
           renderProducts();
           renderPromotions();
@@ -3640,7 +3640,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-opt-id');
         if (confirm('Deseja excluir este adicional?')) {
-          await window.db.deleteOptional(id);
+          await window.db.deleteOptional(id, currentAdminStore);
           adminState.optionals = adminState.optionals.filter(o => o.id !== id);
           renderOptionals();
         }
@@ -3717,7 +3717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const payload = { name, price, is_active, target, applicable_category_ids };
       if (id) payload.id = id;
 
-      const saved = await window.db.saveOptional(payload);
+      const saved = await window.db.saveOptional(payload, currentAdminStore);
       if (id) {
         adminState.optionals = adminState.optionals.map(o => o.id === id ? saved : o);
       } else {
@@ -3915,7 +3915,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function updateCashStatusBadge(reportDate) {
-    const closings = await window.db.getCashClosings();
+    const closings = await window.db.getCashClosings(currentAdminStore);
     const found = closings.find(c => (c.closing_date || c.date) === reportDate);
 
     if (found) {
@@ -3931,7 +3931,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function renderCashClosingsHistory() {
-    const closings = await window.db.getCashClosings();
+    const closings = await window.db.getCashClosings(currentAdminStore);
     if (!closings || closings.length === 0) {
       dom.cashClosingsHistoryTableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum fechamento registrado ainda.</td></tr>`;
       return;
@@ -4095,7 +4095,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.btnConfirmManualCashClose.textContent = 'Gravando fechamento...';
 
     try {
-      await window.db.saveCashClosing(closingPayload);
+      await window.db.saveCashClosing(closingPayload, currentAdminStore);
       dom.manualCashCloseModal.style.display = 'none';
       
       printDailyCashSummary(reportDate);
@@ -4819,11 +4819,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.btnSubmitWhatsappOrder.textContent = '⏳ Registrando pedido...';
 
     try {
-      await window.db.createOrder(orderPayload);
+      await window.db.createOrder(orderPayload, currentAdminStore);
       dom.whatsappOrderModal.style.display = 'none';
       adminState.waCart = [];
 
-      adminState.orders = await window.db.getOrders();
+      adminState.orders = await window.db.getOrders(currentAdminStore);
       renderOrders();
       renderDashboard();
       renderCashReport();
@@ -4910,7 +4910,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   dom.btnRefreshOrders.addEventListener('click', async () => {
-    adminState.orders = await window.db.getOrders();
+    adminState.orders = await window.db.getOrders(currentAdminStore);
     renderSalonTables();
     renderOrders();
     renderDashboard();
@@ -5034,7 +5034,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Sincronização em tempo real entre abas no mesmo navegador
   window.addEventListener('storage', async (e) => {
     if (e.key === 'boydegusta_orders') {
-      const fresh = await window.db.getOrders();
+      const fresh = await window.db.getOrders(currentAdminStore);
       checkForNewOrdersAndBeep(fresh);
       adminState.orders = fresh;
       renderSalonTables();
@@ -5047,7 +5047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Função utilitária para sincronizar pedidos em background
   async function syncOrdersQuietly() {
     try {
-      const freshOrders = await window.db.getOrders();
+      const freshOrders = await window.db.getOrders(currentAdminStore);
       checkForNewOrdersAndBeep(freshOrders);
       if (JSON.stringify(freshOrders) !== JSON.stringify(adminState.orders)) {
         adminState.orders = freshOrders;
@@ -5078,3 +5078,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Checa autenticação inicial
   checkAuth();
 });
+
+
+
+
+
+
