@@ -128,9 +128,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   async function init() {
     try {
-      const bootstrap = await window.db.getBootstrap();
+      const activeStore = (typeof window.getCurrentStoreId === 'function') ? window.getCurrentStoreId() : 'lote92';
+      window.BOYDEGUSTA_STORE_ID = activeStore;
 
-      state.settings = bootstrap.settings || window.INITIAL_SETTINGS;
+      // Atualiza badge e título no cabeçalho
+      const storeUnitBadgeName = document.getElementById('storeUnitBadgeName');
+      const headerStoreTitle = document.getElementById('headerStoreTitle');
+      if (storeUnitBadgeName) {
+        storeUnitBadgeName.textContent = activeStore === 'vilarica' ? 'Vila Rica' : 'Lote 92';
+      }
+      if (headerStoreTitle && activeStore === 'vilarica') {
+        headerStoreTitle.innerHTML = 'Boy<span>Degusta</span> <small style="font-size: 0.65em; color: #ef4444; font-weight: 800; text-transform: uppercase;">na Brasa</small>';
+      }
+
+      // Inicializa o carrinho com o namespace da loja ativa
+      if (window.cart && typeof window.cart.init === 'function') {
+        window.cart.init();
+      }
+
+      const bootstrap = await window.db.getBootstrap(activeStore);
+
+      state.settings = bootstrap.settings || (activeStore === 'vilarica' ? window.INITIAL_SETTINGS_VILARICA : window.INITIAL_SETTINGS);
       state.operatingHours = bootstrap.hours || window.INITIAL_OPERATING_HOURS;
       state.categories = (bootstrap.categories || []).filter(c => c.is_active !== false).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
       state.products = (bootstrap.products || []).filter(p => p.is_active !== false);
@@ -352,10 +370,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function getFilteredOptionalsForProduct(product) {
     if (!product) return [];
+
+    const activeStore = window.BOYDEGUSTA_STORE_ID || (typeof window.getCurrentStoreId === 'function' ? window.getCurrentStoreId() : 'lote92');
+    const productCategoryId = product.category_id || '';
+
+    // Loja Vila Rica: Hambúrgueres recebem os adicionais específicos (Carne extra e Combo Batata+Refri)
+    if (activeStore === 'vilarica' || product.store_id === 'vilarica' || productCategoryId === 'cat-vr-brasa') {
+      if (productCategoryId === 'cat-vr-brasa' || (product.name && product.name.toLowerCase().includes('brasa'))) {
+        return state.optionals.filter(opt => opt.is_active !== false);
+      }
+      return [];
+    }
+
     const isBrasa = isProductNaBrasa(product);
     const isChapa = isProductNaChapa(product);
     const isBurguer = isBrasa || isChapa;
-    const productCategoryId = product.category_id || '';
 
     return state.optionals.filter(opt => {
       if (opt.is_active === false) return false;
@@ -1253,9 +1282,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const generalNotes = dom.inputOrderGeneralNotes.value.trim();
+    const activeStore = window.BOYDEGUSTA_STORE_ID || (typeof window.getCurrentStoreId === 'function' ? window.getCurrentStoreId() : 'lote92');
 
     // Criação do Pedido no Banco de Dados
     const orderPayload = {
+      store_id: activeStore,
       user_id: state.currentUser ? state.currentUser.id : null,
       customer_name: custName,
       customer_phone: custPhone,
@@ -1274,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.btnConfirmOrder.textContent = 'Enviando Pedido...';
 
     try {
-      const savedOrder = await window.db.createOrder(orderPayload);
+      const savedOrder = await window.db.createOrder(orderPayload, activeStore);
       const formattedMessage = window.cart.formatWhatsAppMessage({
         orderNumber: savedOrder.order_number,
         customerName: custName,

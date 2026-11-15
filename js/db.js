@@ -23,6 +23,21 @@
     DAY_PROMOTIONS: 'boydegusta_day_promotions'
   };
 
+  function getCurrentStoreId() {
+    if (window.BOYDEGUSTA_STORE_ID) return window.BOYDEGUSTA_STORE_ID;
+    try {
+      const p = new URLSearchParams(window.location.search).get('loja');
+      if (p === 'vilarica') return 'vilarica';
+      if (p === 'lote92') return 'lote92';
+    } catch {}
+    if (window.location.pathname.includes('admin.html')) {
+      const savedAdminStore = localStorage.getItem('boydegusta_admin_store');
+      if (savedAdminStore === 'vilarica') return 'vilarica';
+    }
+    return 'lote92';
+  }
+  window.getCurrentStoreId = getCurrentStoreId;
+
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   function isUuid(id) {
@@ -193,7 +208,28 @@
     // ----------------------------------------
     // 0. BOOTSTRAP UNIFICADO (1 requisição para tudo)
     // ----------------------------------------
-    async getBootstrap() {
+    async getBootstrap(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const vrSettings = getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
+        const vrCategories = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
+        const vrProducts = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
+        const vrOptionals = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
+        const vrHours = getStored('boydegusta_vr_hours', window.INITIAL_OPERATING_HOURS);
+        const vrNeighborhoods = getStored('boydegusta_vr_neighborhoods', window.INITIAL_NEIGHBORHOODS || []);
+        const vrCouriers = getStored('boydegusta_vr_couriers', window.INITIAL_COURIERS || []);
+        return {
+          settings: vrSettings,
+          hours: vrHours,
+          categories: vrCategories,
+          products: vrProducts,
+          optionals: vrOptionals,
+          promotions: [],
+          neighborhoods: vrNeighborhoods,
+          couriers: vrCouriers
+        };
+      }
+
       try {
         const result = await api('get-bootstrap', 'GET');
         if (result && result.data) {
@@ -255,7 +291,11 @@
     // ----------------------------------------
     // 1. CONFIGURAÇÕES
     // ----------------------------------------
-    async getSettings() {
+    async getSettings(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        return getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
+      }
       try {
         const result = await api('get-settings', 'GET');
         if (result.data) {
@@ -268,7 +308,14 @@
       return getStored(STORAGE_KEYS.SETTINGS, window.INITIAL_SETTINGS);
     },
 
-    async updateSettings(newSettings) {
+    async updateSettings(newSettings, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const current = getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
+        const updated = { ...current, ...newSettings, updated_at: new Date().toISOString() };
+        setStored('boydegusta_vr_settings', updated);
+        return updated;
+      }
       const current = getStored(STORAGE_KEYS.SETTINGS, window.INITIAL_SETTINGS);
       const updated = { ...current, ...newSettings, updated_at: new Date().toISOString() };
       setStored(STORAGE_KEYS.SETTINGS, updated);
@@ -319,7 +366,11 @@
     // ----------------------------------------
     // 3. CATEGORIAS
     // ----------------------------------------
-    async getCategories() {
+    async getCategories(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        return getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
+      }
       try {
         const result = await api('get-categories', 'GET');
         if (result.data && result.data.length > 0) {
@@ -332,7 +383,16 @@
       return getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
     },
 
-    async saveCategory(cat) {
+    async saveCategory(cat, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const list = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
+        const idx = list.findIndex(c => c.id === cat.id);
+        if (idx >= 0) list[idx] = cat;
+        else list.push(cat);
+        setStored('boydegusta_vr_categories', list);
+        return cat;
+      }
       const result = await api('save-category', 'POST', cat);
       const saved = result?.data || cat;
       const list = getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
@@ -343,7 +403,13 @@
       return saved;
     },
 
-    async deleteCategory(id) {
+    async deleteCategory(id, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const list = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
+        setStored('boydegusta_vr_categories', list.filter(c => c.id !== id));
+        return true;
+      }
       await api('delete-category', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
       setStored(STORAGE_KEYS.CATEGORIES, list.filter(c => c.id !== id));
@@ -353,7 +419,15 @@
     // ----------------------------------------
     // 4. PRODUTOS
     // ----------------------------------------
-    async getProducts() {
+    async getProducts(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const localVr = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
+        return localVr.map(p => ({
+          ...p,
+          promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
+        }));
+      }
       try {
         const result = await api('get-products', 'GET');
         if (Array.isArray(result.data)) {
@@ -374,12 +448,14 @@
       }));
     },
 
-    async saveProduct(prod) {
+    async saveProduct(prod, requestedStoreId) {
+      const activeStore = requestedStoreId || prod.store_id || getCurrentStoreId();
       const normalizedDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price) : (Array.isArray(prod.promo_days) ? prod.promo_days : []);
       const rawPromoPrice = (prod.promo_price !== null && prod.promo_price !== undefined && prod.promo_price !== '') ? Number(prod.promo_price) : null;
       
       const payload = {
         ...prod,
+        store_id: activeStore,
         price: (prod.price !== null && prod.price !== undefined && prod.price !== '') ? Number(prod.price) : null,
         promo_price: rawPromoPrice,
         promo_days: normalizedDays,
@@ -387,6 +463,15 @@
         is_promo: Boolean(prod.is_promo || (normalizedDays.length > 0 && rawPromoPrice > 0)),
         monday_price: (normalizedDays.includes(1) && rawPromoPrice) ? rawPromoPrice : (prod.monday_price ? Number(prod.monday_price) : null)
       };
+
+      if (activeStore === 'vilarica') {
+        const list = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
+        const idx = list.findIndex(p => p.id === prod.id);
+        if (idx >= 0) list[idx] = payload;
+        else list.push(payload);
+        setStored('boydegusta_vr_products', list);
+        return payload;
+      }
 
       const result = await api('save-product', 'POST', payload);
       const saved = result?.data || payload;
@@ -400,7 +485,13 @@
       return saved;
     },
 
-    async deleteProduct(id) {
+    async deleteProduct(id, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const list = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
+        setStored('boydegusta_vr_products', list.filter(p => p.id !== id));
+        return true;
+      }
       await api('delete-product', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
       setStored(STORAGE_KEYS.PRODUCTS, list.filter(p => p.id !== id));
@@ -410,7 +501,11 @@
     // ----------------------------------------
     // 5. ADICIONAIS
     // ----------------------------------------
-    async getOptionals() {
+    async getOptionals(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        return getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
+      }
       try {
         const result = await api('get-optionals', 'GET');
         if (Array.isArray(result.data)) {
@@ -423,8 +518,19 @@
       return getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
     },
 
-    async saveOptional(opt) {
-      const payload = { ...opt, price: Number(opt.price) || 0 };
+    async saveOptional(opt, requestedStoreId) {
+      const activeStore = requestedStoreId || opt.store_id || getCurrentStoreId();
+      const payload = { ...opt, store_id: activeStore, price: Number(opt.price) || 0 };
+
+      if (activeStore === 'vilarica') {
+        const list = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
+        const idx = list.findIndex(o => o.id === opt.id);
+        if (idx >= 0) list[idx] = payload;
+        else list.push(payload);
+        setStored('boydegusta_vr_optionals', list);
+        return payload;
+      }
+
       const result = await api('save-optional', 'POST', payload);
       const saved = result?.data || payload;
 
@@ -437,7 +543,13 @@
       return saved;
     },
 
-    async deleteOptional(id) {
+    async deleteOptional(id, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const list = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
+        setStored('boydegusta_vr_optionals', list.filter(o => o.id !== id));
+        return true;
+      }
       await api('delete-optional', 'DELETE', { id });
       const list = getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
       setStored(STORAGE_KEYS.OPTIONALS, list.filter(o => o.id !== id));
@@ -484,7 +596,16 @@
     // ----------------------------------------
     // 7. PEDIDOS
     // ----------------------------------------
-    async getOrders() {
+    async getOrders(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const localVr = getStored('boydegusta_vr_orders', []);
+        return localVr.map(o => ({
+          ...o,
+          items: o.items || o.order_items || [],
+          table_number: o.table_number ? Number(o.table_number) : null
+        }));
+      }
       try {
         const result = await api('get-orders', 'GET');
         if (result.data) {
@@ -507,9 +628,11 @@
       }));
     },
 
-    async createOrder(orderPayload) {
+    async createOrder(orderPayload, requestedStoreId) {
+      const activeStore = requestedStoreId || orderPayload.store_id || getCurrentStoreId();
       let newOrder = {
         ...orderPayload,
+        store_id: activeStore,
         status: orderPayload.status || 'novo',
         table_number: (orderPayload.table_number !== null && orderPayload.table_number !== undefined && orderPayload.table_number !== '') ? Number(orderPayload.table_number) : null,
         whatsapp_sent: orderPayload.whatsapp_sent !== false,
@@ -517,6 +640,15 @@
         updated_at: new Date().toISOString(),
         items: orderPayload.items || []
       };
+
+      if (activeStore === 'vilarica') {
+        const currentVrOrders = getStored('boydegusta_vr_orders', []);
+        const maxNum = currentVrOrders.reduce((m, o) => Math.max(m, Number(o.order_number) || 0), 1000);
+        newOrder.id = newOrder.id || generateUuidOrId('order_vr');
+        newOrder.order_number = maxNum + 1;
+        setStored('boydegusta_vr_orders', [newOrder, ...currentVrOrders]);
+        return newOrder;
+      }
 
       const apiPayload = { ...newOrder };
       // Se user_id não for UUID válido, remove do payload da API
@@ -560,8 +692,10 @@
       throw new Error(lastErr?.message || 'Não foi possível salvar o pedido no sistema. Verifique sua conexão e tente novamente.');
     },
 
-    async updateOrderStatus(orderId, newStatus, paymentMethod, courierName) {
-      const orders = getStored(STORAGE_KEYS.ORDERS, []);
+    async updateOrderStatus(orderId, newStatus, paymentMethod, courierName, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      const storageKey = activeStore === 'vilarica' ? 'boydegusta_vr_orders' : STORAGE_KEYS.ORDERS;
+      const orders = getStored(storageKey, []);
       const updated = orders.map(o => {
         if (o.id === orderId) {
           const u = { ...o, status: newStatus, payment_method: paymentMethod || o.payment_method, updated_at: new Date().toISOString() };
@@ -570,12 +704,16 @@
         }
         return o;
       });
-      setStored(STORAGE_KEYS.ORDERS, updated);
-      try {
-        await api('update-order', 'POST', { id: orderId, status: newStatus, payment_method: paymentMethod, courier_name: courierName });
-      } catch (e) {
-        console.warn('Erro ao atualizar pedido via API:', e);
+      setStored(storageKey, updated);
+      if (activeStore !== 'vilarica') {
+        try {
+          await api('update-order', 'POST', { id: orderId, status: newStatus, payment_method: paymentMethod, courier_name: courierName });
+        } catch (e) {
+          console.warn('Erro ao atualizar pedido via API:', e);
+        }
       }
+      return updated.find(o => o.id === orderId);
+    },
       return updated.find(o => o.id === orderId);
     },
 
@@ -795,7 +933,11 @@
     // ----------------------------------------
     // 10. FECHAMENTO DE CAIXA
     // ----------------------------------------
-    async getCashClosings() {
+    async getCashClosings(requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        return getStored('boydegusta_vr_cash_closings', []);
+      }
       try {
         const result = await api('get-cash-closings', 'GET');
         if (result.data) {
@@ -808,7 +950,20 @@
       return getStored(STORAGE_KEYS.CASH_CLOSINGS, []);
     },
 
-    async saveCashClosing(closing) {
+    async saveCashClosing(closing, requestedStoreId) {
+      const activeStore = requestedStoreId || getCurrentStoreId();
+      if (activeStore === 'vilarica') {
+        const closings = getStored('boydegusta_vr_cash_closings', []);
+        const saved = {
+          ...closing,
+          store_id: 'vilarica',
+          id: closing.id || generateUuidOrId('closing_vr'),
+          closed_at: closing.closed_at || new Date().toISOString()
+        };
+        const closingKey = saved.closing_date || saved.date;
+        setStored('boydegusta_vr_cash_closings', [saved, ...closings.filter(c => (c.closing_date || c.date) !== closingKey)]);
+        return saved;
+      }
       const closings = getStored(STORAGE_KEYS.CASH_CLOSINGS, []);
       const saved = {
         ...closing,

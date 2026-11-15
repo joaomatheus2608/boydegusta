@@ -32,22 +32,41 @@
     <div class="admin-login-box">
       <img src="boylogo.jpg" alt="BoyDegusta Logo" />
       <h2>Painel Administrativo</h2>
-      <p>Área restrita de gestão do restaurante BoyDegusta</p>
+      <p>Selecione a unidade e informe a senha para gerenciar</p>
+
+      <!-- Seletor de Loja no Login -->
+      <div class="admin-login-store-selector" id="adminLoginStoreSelector">
+        <button type="button" class="btn-login-store active" data-store="lote92" id="btnLoginStoreLote92">
+          <i class="fi fi-sr-shop"></i>
+          <div class="store-info-col">
+            <strong>Lote 92</strong>
+            <span>Av. Dom Carlos Coelho</span>
+          </div>
+        </button>
+        <button type="button" class="btn-login-store" data-store="vilarica" id="btnLoginStoreVilaRica">
+          <i class="fi fi-sr-shop"></i>
+          <div class="store-info-col">
+            <strong>Vila Rica</strong>
+            <span>Boy Degusta na Brasa</span>
+          </div>
+        </button>
+      </div>
 
       <form id="adminLoginForm">
+        <input type="hidden" id="selectedAdminStore" value="lote92" />
         <div class="form-field-group" style="text-align: left; margin-bottom: 16px;">
           <label class="form-field-label">Senha de Acesso</label>
           <input type="password" id="adminPasswordInput" class="form-text-input" placeholder="Digite a senha" required
             autofocus />
         </div>
         <button type="submit" class="btn-submit-order" style="width: 100%;">
-          🔓 Entrar no Painel
+          🔓 Entrar no Painel — <span id="lblLoginSelectedStore">Lote 92</span>
         </button>
       </form>
 
       <a href="index.html"
         style="display: inline-block; margin-top: 18px; font-size: 0.82rem; color: var(--text-muted);">
-        ← Voltar ao Cardápio do Cliente
+        ← Voltar à Apresentação do Cliente
       </a>
     </div>
   </div>
@@ -71,6 +90,10 @@
         <button type="button" id="btnCloseMobileNav" class="btn-close-mobile-sidebar" aria-label="Fechar Menu">✕</button>
       </div>
 
+      <div class="sidebar-store-pill" id="sidebarActiveStoreBadge">
+        <i class="fi fi-sr-shop"></i> Unidade: <strong id="sidebarStoreNameText">Lote 92</strong>
+      </div>
+
       <nav class="admin-nav-tabs vertical-nav hide-scrollbar">
         <button class="admin-tab-btn active" data-tab="pos"><i class="fi fi-sr-utensils"></i> Mesas & Balcão (PDV)</button>
         <button class="admin-tab-btn" data-tab="dashboard"><i class="fi fi-sr-chart-histogram"></i> Dashboard</button>
@@ -85,7 +108,7 @@
       </nav>
 
       <div class="sidebar-footer-links">
-        <a href="cardapio.html" target="_blank" class="sidebar-footer-btn">
+        <a href="cardapio.html" target="_blank" class="sidebar-footer-btn" id="sidebarLinkMenu">
           <i class="fi fi-sr-globe"></i> Ver Cardápio
         </a>
         <button type="button" id="btnSidebarLogout" class="sidebar-footer-btn logout">
@@ -104,6 +127,16 @@
             <i class="fi fi-sr-menu-burger"></i>
             <span id="adminMobileActiveTabLabel">Menu</span>
           </button>
+
+          <!-- Seletor Rápido de Unidade no Topo do Admin -->
+          <div class="admin-store-switcher" id="adminHeaderStoreSwitcher">
+            <button type="button" class="btn-admin-store-switch active" data-store="lote92" id="switchStoreLote92" title="Alternar para Loja Lote 92">
+              <i class="fi fi-sr-shop"></i> <span>Lote 92</span>
+            </button>
+            <button type="button" class="btn-admin-store-switch" data-store="vilarica" id="switchStoreVilaRica" title="Alternar para Loja Vila Rica">
+              <i class="fi fi-sr-shop"></i> <span>Vila Rica</span>
+            </button>
+          </div>
         </div>
 
         <div class="admin-header-actions">

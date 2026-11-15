@@ -668,4 +668,231 @@ window.INITIAL_COURIERS = INITIAL_COURIERS;
 window.formatCurrency = formatCurrency;
 window.escapeHtml = escapeHtml;
 
+// ========================================================
+// BOYDEGUSTA - DADOS ESPECÍFICOS DA UNIDADE VILA RICA
+// ========================================================
+const INITIAL_SETTINGS_VILARICA = {
+  id: 'store-settings-vilarica',
+  store_id: 'vilarica',
+  name: 'Boy Degusta na Brasa — Vila Rica',
+  address: 'Unidade Vila Rica — Jaboatão dos Guararapes - PE',
+  whatsapp: '5581992686946',
+  instagram: '@boydegusta',
+  delivery_fee: 5.00,
+  min_order_value: 10.00,
+  store_status_mode: 'auto',
+  closed_message: 'Estamos fechados no momento. Nosso horário de funcionamento é das 18:00 às 23:00.',
+  admin_password_hash: null,
+  pix_key: '5581992686946',
+  pix_type: 'Telefone',
+  pix_beneficiary: 'BoyDegusta Vila Rica'
+};
+
+const INITIAL_CATEGORIES_VILARICA = [
+  { id: 'cat-vr-brasa', store_id: 'vilarica', name: 'Boy Degusta na Brasa', slug: 'boy-degusta-na-brasa', order_index: 1, is_active: true },
+  { id: 'cat-vr-batatas', store_id: 'vilarica', name: 'Batatas', slug: 'batatas', order_index: 2, is_active: true },
+  { id: 'cat-vr-bebidas', store_id: 'vilarica', name: 'Bebidas', slug: 'bebidas', order_index: 3, is_active: true }
+];
+
+const INITIAL_OPTIONALS_VILARICA = [
+  { id: 'opt-vr-carne', store_id: 'vilarica', name: 'Acrescente 1 carne de burger', price: 5.00, is_active: true, target: 'brasa', order_index: 1 },
+  { id: 'opt-vr-combo', store_id: 'vilarica', name: 'Combo: Batata + Refrigerante lata', price: 10.00, is_active: true, target: 'brasa', order_index: 2 }
+];
+
+const INITIAL_PRODUCTS_VILARICA = [
+  // Hambúrgueres na Brasa
+  {
+    id: 'prod-vr-1',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '01 Boy Brasa Tradicional',
+    description: 'Pão bola, burger 120g, queijo mussarela, tomate e maionese artesanal.',
+    price: 15.00,
+    image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 1
+  },
+  {
+    id: 'prod-vr-2',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '02 Boy Brasa Bacon',
+    description: 'Pão bola, burger 120g, queijo mussarela, bacon, tomate e maionese artesanal.',
+    price: 17.00,
+    image_url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 2
+  },
+  {
+    id: 'prod-vr-3',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '03 Boy Brasa Calabresa',
+    description: 'Pão bola, burger 120g, queijo mussarela, queijo coalho, calabresa, tomate e maionese artesanal.',
+    price: 17.00,
+    image_url: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 3
+  },
+  {
+    id: 'prod-vr-4',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '04 Boy Brasa Abacaxi e Mel',
+    description: 'Pão bola, burger 120g, queijo mussarela, abacaxi, bacon, mel, tomate e maionese artesanal.',
+    price: 18.00,
+    image_url: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 4
+  },
+  {
+    id: 'prod-vr-5',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '05 Boy Brasa Cheddar',
+    description: 'Pão bola, burger 120g, queijo mussarela, queijo cheddar, bacon, tomate e maionese artesanal.',
+    price: 18.00,
+    image_url: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 5
+  },
+  {
+    id: 'prod-vr-6',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '06 Boy Brasa Creme Chese',
+    description: 'Pão bola, burger 120g, queijo mussarela, creme chese, bacon, tomate e maionese artesanal.',
+    price: 18.00,
+    image_url: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 6
+  },
+  {
+    id: 'prod-vr-7',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '07 Boy Brasa Nordestino',
+    description: 'Pão bola, burger 120g, queijo mussarela, queijo coalho, charque desfiada, tomate e maionese artesanal.',
+    price: 20.00,
+    image_url: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 7
+  },
+  {
+    id: 'prod-vr-8',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-brasa',
+    name: '08 Boy Brasa Costela',
+    description: 'Pão bola, burger 120g, queijo mussarela, creme chese, costela desfiada, tomate e maionese artesanal.',
+    price: 20.00,
+    image_url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 8
+  },
+
+  // Batatas
+  {
+    id: 'prod-vr-batata-1',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-batatas',
+    name: 'Fritas Batata tradicional',
+    description: 'Batata frita crocante tradicional, sequinha e dourada.',
+    price: 10.00,
+    image_url: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 9
+  },
+  {
+    id: 'prod-vr-batata-2',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-batatas',
+    name: 'Batata com costela e creme chese',
+    description: 'Batata frita coberta com deliciosa costela desfiada na brasa e creme cheese.',
+    price: 16.00,
+    image_url: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 10
+  },
+
+  // Bebidas
+  {
+    id: 'prod-vr-refri-lata',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-bebidas',
+    name: 'Refrigerante lata',
+    description: 'Lata 350ml gelada (Coca-Cola, Guaraná Antarctica ou Fanta).',
+    price: 7.00,
+    image_url: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 11
+  },
+  {
+    id: 'prod-vr-refri-1l',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-bebidas',
+    name: 'Refrigerante 1 litro',
+    description: 'Garrafa 1 Litro gelada.',
+    price: 10.00,
+    image_url: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 12
+  },
+  {
+    id: 'prod-vr-h2o',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-bebidas',
+    name: 'H2O',
+    description: 'H2OH! Limão ou Limoneto bem gelada 500ml.',
+    price: 8.00,
+    image_url: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 13
+  },
+  {
+    id: 'prod-vr-agua',
+    store_id: 'vilarica',
+    category_id: 'cat-vr-bebidas',
+    name: 'Água sem gás',
+    description: 'Água mineral natural sem gás 500ml.',
+    price: 3.00,
+    image_url: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80',
+    is_promo: false,
+    is_active: true,
+    is_available: true,
+    order_index: 14
+  }
+];
+
+window.INITIAL_SETTINGS_VILARICA = INITIAL_SETTINGS_VILARICA;
+window.INITIAL_CATEGORIES_VILARICA = INITIAL_CATEGORIES_VILARICA;
+window.INITIAL_OPTIONALS_VILARICA = INITIAL_OPTIONALS_VILARICA;
+window.INITIAL_PRODUCTS_VILARICA = INITIAL_PRODUCTS_VILARICA;
+
+
 

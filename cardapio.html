@@ -51,10 +51,15 @@
         <div class="header-brand" onclick="window.location.href='index.html'">
           <img src="boylogo.jpg" alt="Logo BoyDegusta" class="header-logo" />
           <div class="header-title-group">
-            <h1>Boy<span>Degusta</span></h1>
-            <div id="storeStatusBadge" class="store-status-pill status-open">
-              <span class="status-indicator-dot"></span>
-              <i class="fi fi-sr-circle" style="color: #22c55e; font-size: 0.7em;"></i> Aberto
+            <h1 id="headerStoreTitle">Boy<span>Degusta</span></h1>
+            <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+              <div id="storeStatusBadge" class="store-status-pill status-open">
+                <span class="status-indicator-dot"></span>
+                <i class="fi fi-sr-circle" style="color: #22c55e; font-size: 0.7em;"></i> Aberto
+              </div>
+              <a href="index.html" id="storeUnitBadge" class="store-unit-badge" title="Clique para trocar de unidade">
+                <i class="fi fi-sr-shop"></i> <span id="storeUnitBadgeName">Lote 92</span> <span style="font-size: 0.65rem; opacity: 0.75;">(trocar)</span>
+              </a>
             </div>
           </div>
         </div>

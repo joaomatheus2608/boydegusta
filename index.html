@@ -60,13 +60,13 @@
         <!-- Nome da Hamburgueria -->
         <h2 class="welcome-store-title">Hamburgueria Boy Degusta</h2>
 
-        <!-- Endereço e Pedido Mínimo -->
+        <!-- Endereço e Informações de Unidades -->
         <div class="welcome-meta-info">
           <div class="welcome-meta-row">
-            <span>Avenida Dom Carlos Coelho, 2211 - Lote 92 — Jaboatão dos Guararapes - PE</span>
+            <span>Unidades: <strong>Lote 92</strong> e <strong>Vila Rica</strong> — Jaboatão dos Guararapes</span>
           </div>
           <div class="welcome-meta-row" style="color: var(--text-muted); font-size: 0.82rem; margin-top: 2px;">
-            <span>Pedido mínimo: <strong>R$ 10,00</strong> • Entrega a partir de <strong>R$ 5,00</strong></span>
+            <span>Selecione a unidade mais próxima para fazer seu pedido</span>
           </div>
         </div>
 
@@ -96,20 +96,37 @@
           </table>
         </div>
 
-        <!-- Botões de Ação Principais -->
-        <div class="welcome-actions-grid" style="margin-top: 6px;">
-          <a href="cardapio.html" class="btn-welcome-order" style="text-decoration: none;">
-            Fazer pedido
+        <!-- Botões de Seleção de Loja -->
+        <div class="welcome-actions-grid" style="margin-top: 10px;">
+          <a href="cardapio.html?loja=lote92" class="btn-store-select" id="btnStoreLote92">
+            <div class="store-select-left">
+              <div class="store-select-icon">
+                <i class="fi fi-sr-shop"></i>
+              </div>
+              <div class="store-select-info">
+                <span class="store-select-name">Boy Degusta Lote 92</span>
+                <span class="store-select-tag">Av. Dom Carlos Coelho, 2211</span>
+              </div>
+            </div>
+            <div class="store-select-arrow">
+              <i class="fi fi-rr-angle-small-right"></i>
+            </div>
           </a>
 
-          <div class="welcome-secondary-actions">
-            <a href="https://wa.me/5581992686946" target="_blank" class="btn-welcome-whatsapp">
-              WhatsApp
-            </a>
-            <button id="btnShareRestaurant" class="btn-welcome-share" type="button">
-              Compartilhar
-            </button>
-          </div>
+          <a href="cardapio.html?loja=vilarica" class="btn-store-select" id="btnStoreVilaRica">
+            <div class="store-select-left">
+              <div class="store-select-icon">
+                <i class="fi fi-sr-shop"></i>
+              </div>
+              <div class="store-select-info">
+                <span class="store-select-name">Boy Degusta Vila Rica</span>
+                <span class="store-select-tag">Unidade Vila Rica</span>
+              </div>
+            </div>
+            <div class="store-select-arrow">
+              <i class="fi fi-rr-angle-small-right"></i>
+            </div>
+          </a>
         </div>
 
       </div>

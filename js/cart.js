@@ -3,7 +3,19 @@
 // ========================================================
 
 (function() {
-  const CART_KEY = 'boydegusta_cart';
+  function getActiveStoreId() {
+    if (window.BOYDEGUSTA_STORE_ID) return window.BOYDEGUSTA_STORE_ID;
+    try {
+      const p = new URLSearchParams(window.location.search).get('loja');
+      if (p === 'vilarica') return 'vilarica';
+      if (p === 'lote92') return 'lote92';
+    } catch {}
+    return 'lote92';
+  }
+
+  function getCartStorageKey() {
+    return getActiveStoreId() === 'vilarica' ? 'boydegusta_cart_vilarica' : 'boydegusta_cart';
+  }
 
   const cart = {
     items: [],
@@ -11,7 +23,7 @@
 
     init() {
       try {
-        const saved = localStorage.getItem(CART_KEY);
+        const saved = localStorage.getItem(getCartStorageKey());
         this.items = saved ? JSON.parse(saved) : [];
       } catch {
         this.items = [];
@@ -21,7 +33,7 @@
 
     save() {
       try {
-        localStorage.setItem(CART_KEY, JSON.stringify(this.items));
+        localStorage.setItem(getCartStorageKey(), JSON.stringify(this.items));
       } catch (e) {
         console.error('Erro ao persistir carrinho:', e);
       }
@@ -191,8 +203,12 @@
         notesText = `OBSERVAÇÃO GERAL:\n${generalNotes.trim()}\n\n`;
       }
 
+      const storeId = getActiveStoreId();
+      const storeBadge = storeId === 'vilarica' ? 'VILA RICA (NA BRASA)' : 'LOTE 92';
+
       const message = 
 `*NOVO PEDIDO — BOYDEGUSTA*
+📍 *UNIDADE: ${storeBadge}*
 *Pedido #${orderNumStr}*
 *Cliente:* ${customerName}
 *Telefone:* ${customerPhone}

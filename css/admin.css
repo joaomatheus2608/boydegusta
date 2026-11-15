@@ -401,6 +401,118 @@
 }
 
 /* ========================================================
+   SELETOR DE LOJAS NO LOGIN E NO HEADER DO ADMIN
+   ======================================================== */
+.admin-login-store-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn-login-store {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #334155;
+}
+
+.btn-login-store i {
+  font-size: 1.3rem;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.btn-login-store .store-info-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.btn-login-store .store-info-col strong {
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.btn-login-store .store-info-col span {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.btn-login-store:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.btn-login-store.active {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.btn-login-store.active i {
+  color: #ef4444;
+}
+
+.btn-login-store.active .store-info-col strong {
+  color: #dc2626;
+}
+
+/* Switcher no Header Bar */
+.admin-store-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-admin-store-switch {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-admin-store-switch:hover {
+  color: #0f172a;
+}
+
+.btn-admin-store-switch.active {
+  background: #ffffff;
+  color: #ef4444;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-store-pill {
+  margin: 10px 14px 4px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ========================================================
    RESPONSIVIDADE DO PAINEL ADMIN
    ======================================================== */
 .table-responsive-wrapper {

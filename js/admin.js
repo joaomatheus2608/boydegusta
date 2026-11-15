@@ -404,16 +404,109 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   // ==========================================
+  // GESTÃO MULTI-LOJAS (LOTE 92 vs VILA RICA)
+  // ==========================================
+  let currentAdminStore = 'lote92';
+  try {
+    const urlStoreParam = new URLSearchParams(window.location.search).get('loja');
+    if (urlStoreParam === 'vilarica' || urlStoreParam === 'lote92') {
+      currentAdminStore = urlStoreParam;
+    } else {
+      currentAdminStore = localStorage.getItem('boydegusta_admin_store') || 'lote92';
+    }
+  } catch {}
+  window.BOYDEGUSTA_STORE_ID = currentAdminStore;
+
+  function setAdminActiveStore(storeId, reloadData = true) {
+    currentAdminStore = (storeId === 'vilarica') ? 'vilarica' : 'lote92';
+    window.BOYDEGUSTA_STORE_ID = currentAdminStore;
+    try {
+      localStorage.setItem('boydegusta_admin_store', currentAdminStore);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('loja', currentAdminStore);
+      window.history.replaceState({}, '', currentUrl.toString());
+    } catch {}
+
+    // Botões no Modal de Login
+    const btnLote = document.getElementById('btnLoginStoreLote92');
+    const btnVila = document.getElementById('btnLoginStoreVilaRica');
+    const lblStore = document.getElementById('lblLoginSelectedStore');
+    const hiddenStore = document.getElementById('selectedAdminStore');
+    if (btnLote && btnVila) {
+      if (currentAdminStore === 'vilarica') {
+        btnLote.classList.remove('active');
+        btnVila.classList.add('active');
+      } else {
+        btnLote.classList.add('active');
+        btnVila.classList.remove('active');
+      }
+    }
+    if (lblStore) lblStore.textContent = currentAdminStore === 'vilarica' ? 'Vila Rica' : 'Lote 92';
+    if (hiddenStore) hiddenStore.value = currentAdminStore;
+
+    // Switcher no Topo do Admin
+    const switchLote = document.getElementById('switchStoreLote92');
+    const switchVila = document.getElementById('switchStoreVilaRica');
+    if (switchLote && switchVila) {
+      if (currentAdminStore === 'vilarica') {
+        switchLote.classList.remove('active');
+        switchVila.classList.add('active');
+      } else {
+        switchLote.classList.add('active');
+        switchVila.classList.remove('active');
+      }
+    }
+
+    // Badge e Link no Sidebar
+    const sidebarStoreText = document.getElementById('sidebarStoreNameText');
+    if (sidebarStoreText) {
+      sidebarStoreText.textContent = currentAdminStore === 'vilarica' ? 'Vila Rica' : 'Lote 92';
+    }
+    const sidebarLink = document.getElementById('sidebarLinkMenu');
+    if (sidebarLink) {
+      sidebarLink.href = `cardapio.html?loja=${currentAdminStore}`;
+    }
+
+    if (reloadData && window.auth.isAdminLoggedIn()) {
+      loadAdminData();
+    }
+  }
+
+  // Listeners dos seletores de loja
+  const btnLoginLote = document.getElementById('btnLoginStoreLote92');
+  const btnLoginVila = document.getElementById('btnLoginStoreVilaRica');
+  if (btnLoginLote) {
+    btnLoginLote.addEventListener('click', () => setAdminActiveStore('lote92', false));
+  }
+  if (btnLoginVila) {
+    btnLoginVila.addEventListener('click', () => setAdminActiveStore('vilarica', false));
+  }
+
+  const switchLote = document.getElementById('switchStoreLote92');
+  const switchVila = document.getElementById('switchStoreVilaRica');
+  if (switchLote) {
+    switchLote.addEventListener('click', () => setAdminActiveStore('lote92', true));
+  }
+  if (switchVila) {
+    switchVila.addEventListener('click', () => setAdminActiveStore('vilarica', true));
+  }
+
+  // Inicializa o visual do seletor
+  setAdminActiveStore(currentAdminStore, false);
+
+  // ==========================================
   // AUTENTICAÇÃO
   // ==========================================
   function checkAuth() {
     if (window.auth.isAdminLoggedIn()) {
       dom.adminLoginModal.style.display = 'none';
       dom.adminApp.style.display = 'flex';
+      setAdminActiveStore(currentAdminStore, false);
       loadAdminData();
     } else {
       dom.adminLoginModal.style.display = 'flex';
       dom.adminApp.style.display = 'none';
+      setAdminActiveStore(currentAdminStore, false);
     }
   }
 
@@ -443,8 +536,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadAdminData() {
     try {
       const [bootstrap, orders] = await Promise.all([
-        window.db.getBootstrap(),
-        window.db.getOrders()
+        window.db.getBootstrap(currentAdminStore),
+        window.db.getOrders(currentAdminStore)
       ]);
 
       adminState.settings = bootstrap.settings || window.INITIAL_SETTINGS;
