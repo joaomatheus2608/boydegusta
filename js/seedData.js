@@ -689,9 +689,9 @@ const INITIAL_SETTINGS_VILARICA = {
 };
 
 const INITIAL_CATEGORIES_VILARICA = [
-  { id: 'cat-vr-brasa', store_id: 'vilarica', name: 'Boy Degusta na Brasa', slug: 'boy-degusta-na-brasa', order_index: 1, is_active: true },
-  { id: 'cat-vr-batatas', store_id: 'vilarica', name: 'Batatas', slug: 'batatas', order_index: 2, is_active: true },
-  { id: 'cat-vr-bebidas', store_id: 'vilarica', name: 'Bebidas', slug: 'bebidas', order_index: 3, is_active: true }
+  { id: 'cat-vr-brasa', store_id: 'vilarica', name: 'Boy Degusta na Brasa', slug: 'boy-degusta-na-brasa-vr', order_index: 1, is_active: true },
+  { id: 'cat-vr-batatas', store_id: 'vilarica', name: 'Batatas', slug: 'batatas-vr', order_index: 2, is_active: true },
+  { id: 'cat-vr-bebidas', store_id: 'vilarica', name: 'Bebidas', slug: 'bebidas-vr', order_index: 3, is_active: true }
 ];
 
 const INITIAL_OPTIONALS_VILARICA = [
