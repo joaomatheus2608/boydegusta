@@ -581,6 +581,7 @@ exports.handler = async function(event) {
       // Constrói payload limpo e seguro para a tabela orders
       const cleanOrderPayload = {
         order_number: nextOrderNumber,
+        store_id: orderData.store_id || 'lote92',
         customer_name: String(orderData.customer_name || 'Cliente').trim(),
         customer_phone: String(orderData.customer_phone || '').trim(),
         order_type: orderType,

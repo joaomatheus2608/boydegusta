@@ -756,8 +756,9 @@
 
       if (result?.data && Number(result.data.order_number) > 0) {
         newOrder = { ...newOrder, ...result.data, items: result.data.items || result.data.order_items || newOrder.items };
-        const currentOrders = getStored(STORAGE_KEYS.ORDERS, []);
-        setStored(STORAGE_KEYS.ORDERS, [newOrder, ...currentOrders.filter(o => o.id !== newOrder.id)]);
+        const localKey = activeStore === 'vilarica' ? 'boydegusta_vr_orders' : STORAGE_KEYS.ORDERS;
+        const currentOrders = getStored(localKey, []);
+        setStored(localKey, [newOrder, ...currentOrders.filter(o => o.id !== newOrder.id)]);
         return newOrder;
       }
 
