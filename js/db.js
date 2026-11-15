@@ -714,8 +714,6 @@
       }
       return updated.find(o => o.id === orderId);
     },
-      return updated.find(o => o.id === orderId);
-    },
 
     async assignCourierToOrder(orderId, courierName) {
       return this.updateOrderStatus(orderId, 'saiu_para_entrega', null, courierName);
