@@ -112,12 +112,27 @@ exports.handler = async function(event) {
     // GET BOOTSTRAP (Carregamento unificado em 1 requisição)
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-bootstrap') {
+      const store = event.queryStringParameters?.store;
+      let catFilter = '';
+      let prodFilter = '';
+      let optFilter = '';
+
+      if (store === 'vilarica') {
+        catFilter = '&store_id=eq.vilarica';
+        prodFilter = '&store_id=eq.vilarica';
+        optFilter = '&store_id=eq.vilarica';
+      } else if (store === 'lote92') {
+        catFilter = '&or=(store_id.eq.lote92,store_id.is.null)';
+        prodFilter = '&or=(store_id.eq.lote92,store_id.is.null)';
+        optFilter = '&or=(store_id.eq.lote92,store_id.is.null)';
+      }
+
       const [settingsData, hoursData, categories, products, optionals, promotions, neighborhoods, couriers] = await Promise.all([
         supabaseFetch('/settings?limit=1').catch(() => null),
         supabaseFetch('/operating_hours?order=day_of_week').catch(() => []),
-        supabaseFetch('/categories?order=order_index').catch(() => []),
-        supabaseFetch('/products?order=name').catch(() => []),
-        supabaseFetch('/optionals?order=name').catch(() => []),
+        supabaseFetch(`/categories?order=order_index${catFilter}`).catch(() => []),
+        supabaseFetch(`/products?order=name${prodFilter}`).catch(() => []),
+        supabaseFetch(`/optionals?order=name${optFilter}`).catch(() => []),
         supabaseFetch('/promotions?order=created_at.desc').catch(() => []),
         supabaseFetch('/neighborhoods?order=name').catch(() => []),
         supabaseFetch('/couriers?order=name').catch(() => [])
@@ -212,7 +227,11 @@ exports.handler = async function(event) {
     // GET CATEGORIES
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-categories') {
-      const data = await supabaseFetch('/categories?order=order_index');
+      const store = event.queryStringParameters?.store;
+      let filter = '';
+      if (store === 'vilarica') filter = '&store_id=eq.vilarica';
+      else if (store === 'lote92') filter = '&or=(store_id.eq.lote92,store_id.is.null)';
+      const data = await supabaseFetch(`/categories?order=order_index${filter}`);
       return respond(200, { data });
     }
 
@@ -258,7 +277,11 @@ exports.handler = async function(event) {
     // GET PRODUCTS
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-products') {
-      const data = await supabaseFetch('/products?order=order_index');
+      const store = event.queryStringParameters?.store;
+      let filter = '';
+      if (store === 'vilarica') filter = '&store_id=eq.vilarica';
+      else if (store === 'lote92') filter = '&or=(store_id.eq.lote92,store_id.is.null)';
+      const data = await supabaseFetch(`/products?order=order_index${filter}`);
       return respond(200, { data });
     }
 
@@ -398,7 +421,11 @@ exports.handler = async function(event) {
     // GET OPTIONALS
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-optionals') {
-      const data = await supabaseFetch('/optionals?order=order_index');
+      const store = event.queryStringParameters?.store;
+      let filter = '';
+      if (store === 'vilarica') filter = '&store_id=eq.vilarica';
+      else if (store === 'lote92') filter = '&or=(store_id.eq.lote92,store_id.is.null)';
+      const data = await supabaseFetch(`/optionals?order=order_index${filter}`);
       return respond(200, { data });
     }
 

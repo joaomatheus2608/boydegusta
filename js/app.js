@@ -150,10 +150,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       state.settings = bootstrap.settings || (activeStore === 'vilarica' ? window.INITIAL_SETTINGS_VILARICA : window.INITIAL_SETTINGS);
       state.operatingHours = bootstrap.hours || window.INITIAL_OPERATING_HOURS;
-      state.categories = (bootstrap.categories || []).filter(c => c.is_active !== false).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
-      state.products = (bootstrap.products || []).filter(p => p.is_active !== false);
-      state.optionals = (bootstrap.optionals || []).filter(o => o.is_active !== false);
-      state.promotions = (bootstrap.promotions || []).filter(p => p.is_active !== false);
+
+      if (activeStore === 'vilarica') {
+        const vrCats = (bootstrap.categories || []).filter(c => (c.store_id === 'vilarica' || String(c.id).startsWith('cat-vr-') || String(c.slug || '').endsWith('-vr')) && c.is_active !== false);
+        state.categories = (vrCats.length > 0 ? vrCats : window.INITIAL_CATEGORIES_VILARICA).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+        const vrProds = (bootstrap.products || []).filter(p => (p.store_id === 'vilarica' || String(p.id).startsWith('prod-vr-') || p.category_id === 'cat-vr-brasa' || String(p.category_id || '').endsWith('-vr')) && p.is_active !== false);
+        state.products = vrProds.length > 0 ? vrProds : window.INITIAL_PRODUCTS_VILARICA;
+
+        const vrOpts = (bootstrap.optionals || []).filter(o => (o.store_id === 'vilarica' || String(o.id).startsWith('opt-vr-')) && o.is_active !== false);
+        state.optionals = vrOpts.length > 0 ? vrOpts : window.INITIAL_OPTIONALS_VILARICA;
+
+        state.promotions = [];
+      } else {
+        // UNIDADE LOTE 92: Exclui estritamente qualquer produto/categoria de Vila Rica e garante os 41 produtos oficiais
+        const loteCats = (bootstrap.categories || []).filter(c => 
+          c.store_id !== 'vilarica' && 
+          !String(c.id).startsWith('cat-vr-') && 
+          !String(c.slug || '').endsWith('-vr') && 
+          c.is_active !== false
+        );
+        state.categories = (loteCats.length > 0 ? loteCats : window.INITIAL_CATEGORIES).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+        const loteProds = (bootstrap.products || []).filter(p => 
+          p.store_id !== 'vilarica' && 
+          !String(p.id).startsWith('prod-vr-') && 
+          p.category_id !== 'cat-vr-brasa' && 
+          !String(p.category_id || '').endsWith('-vr') && 
+          p.is_active !== false
+        );
+        state.products = loteProds.length > 0 ? loteProds : window.INITIAL_PRODUCTS;
+
+        const loteOpts = (bootstrap.optionals || []).filter(o => 
+          o.store_id !== 'vilarica' && 
+          !String(o.id).startsWith('opt-vr-') && 
+          o.is_active !== false
+        );
+        state.optionals = loteOpts.length > 0 ? loteOpts : window.INITIAL_OPTIONALS;
+
+        state.promotions = (bootstrap.promotions || []).filter(p => p.is_active !== false);
+        if (state.promotions.length === 0 && window.INITIAL_PROMOTIONS) {
+          state.promotions = window.INITIAL_PROMOTIONS;
+        }
+      }
+
       state.neighborhoods = bootstrap.neighborhoods || [];
       state.currentUser = window.auth.getCurrentUser();
 

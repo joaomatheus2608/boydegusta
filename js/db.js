@@ -108,13 +108,73 @@
     return json;
   }
 
+  // Funções utilitárias de limpeza e segurança de dados por loja
+  function getLoteCategories() {
+    const local = getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES) || [];
+    const filtered = local.filter(c => c.store_id !== 'vilarica' && !String(c.id).startsWith('cat-vr-') && !String(c.slug || '').endsWith('-vr'));
+    if (filtered.length === 0) {
+      setStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
+      return window.INITIAL_CATEGORIES;
+    }
+    return filtered;
+  }
+
+  function getLoteProducts() {
+    const local = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS) || [];
+    const filtered = local.filter(p => p.store_id !== 'vilarica' && !String(p.id).startsWith('prod-vr-') && p.category_id !== 'cat-vr-brasa' && !String(p.category_id || '').endsWith('-vr'));
+    if (filtered.length === 0) {
+      setStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+      return window.INITIAL_PRODUCTS;
+    }
+    return filtered;
+  }
+
+  function getLoteOptionals() {
+    const local = getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS) || [];
+    const filtered = local.filter(o => o.store_id !== 'vilarica' && !String(o.id).startsWith('opt-vr-'));
+    if (filtered.length === 0) {
+      setStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
+      return window.INITIAL_OPTIONALS;
+    }
+    return filtered;
+  }
+
   // Inicialização dos defaults locais
   function initDefaults() {
     if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) setStored(STORAGE_KEYS.SETTINGS, window.INITIAL_SETTINGS);
     if (!localStorage.getItem(STORAGE_KEYS.HOURS)) setStored(STORAGE_KEYS.HOURS, window.INITIAL_OPERATING_HOURS);
-    if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) setStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
-    if (!localStorage.getItem(STORAGE_KEYS.PRODUCTS)) setStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
-    if (!localStorage.getItem(STORAGE_KEYS.OPTIONALS)) setStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
+    
+    // Auto-recuperação: se o localStorage foi poluído com produtos de Vila Rica, restaura o Lote 92
+    try {
+      const storedProds = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS) || '[]');
+      const hasLoteProds = Array.isArray(storedProds) && storedProds.some(p => p.store_id !== 'vilarica' && !String(p.id).startsWith('prod-vr-'));
+      if (!hasLoteProds) {
+        setStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+      }
+    } catch {
+      setStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+    }
+
+    try {
+      const storedCats = JSON.parse(localStorage.getItem(STORAGE_KEYS.CATEGORIES) || '[]');
+      const hasLoteCats = Array.isArray(storedCats) && storedCats.some(c => c.store_id !== 'vilarica' && !String(c.id).startsWith('cat-vr-'));
+      if (!hasLoteCats) {
+        setStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
+      }
+    } catch {
+      setStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
+    }
+
+    try {
+      const storedOpts = JSON.parse(localStorage.getItem(STORAGE_KEYS.OPTIONALS) || '[]');
+      const hasLoteOpts = Array.isArray(storedOpts) && storedOpts.some(o => o.store_id !== 'vilarica' && !String(o.id).startsWith('opt-vr-'));
+      if (!hasLoteOpts) {
+        setStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
+      }
+    } catch {
+      setStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
+    }
+
     if (!localStorage.getItem(STORAGE_KEYS.PROMOTIONS)) setStored(STORAGE_KEYS.PROMOTIONS, window.INITIAL_PROMOTIONS);
     if (!localStorage.getItem(STORAGE_KEYS.NEIGHBORHOODS)) setStored(STORAGE_KEYS.NEIGHBORHOODS, window.INITIAL_NEIGHBORHOODS || []);
     if (!localStorage.getItem(STORAGE_KEYS.COURIERS)) setStored(STORAGE_KEYS.COURIERS, window.INITIAL_COURIERS || []);
@@ -231,14 +291,30 @@
       }
 
       try {
-        const result = await api('get-bootstrap', 'GET');
+        const result = await api('get-bootstrap&store=lote92', 'GET');
         if (result && result.data) {
           const d = result.data;
           if (d.settings) setStored(STORAGE_KEYS.SETTINGS, d.settings);
           if (d.hours && Array.isArray(d.hours)) setStored(STORAGE_KEYS.HOURS, d.hours);
-          if (d.categories && Array.isArray(d.categories)) setStored(STORAGE_KEYS.CATEGORIES, d.categories);
-          if (d.products && Array.isArray(d.products)) setStored(STORAGE_KEYS.PRODUCTS, d.products);
-          if (d.optionals && Array.isArray(d.optionals)) setStored(STORAGE_KEYS.OPTIONALS, d.optionals);
+
+          // Filtra estritamente categorias de Lote 92
+          const remoteCats = Array.isArray(d.categories) ? d.categories : [];
+          const loteCats = remoteCats.filter(c => c.store_id !== 'vilarica' && !String(c.id).startsWith('cat-vr-') && !String(c.slug || '').endsWith('-vr'));
+          d.categories = loteCats.length > 0 ? loteCats : window.INITIAL_CATEGORIES;
+          setStored(STORAGE_KEYS.CATEGORIES, d.categories);
+
+          // Filtra estritamente produtos de Lote 92
+          const remoteProds = Array.isArray(d.products) ? d.products : [];
+          const loteProds = remoteProds.filter(p => p.store_id !== 'vilarica' && !String(p.id).startsWith('prod-vr-') && p.category_id !== 'cat-vr-brasa' && !String(p.category_id || '').endsWith('-vr'));
+          d.products = loteProds.length > 0 ? loteProds : window.INITIAL_PRODUCTS;
+          setStored(STORAGE_KEYS.PRODUCTS, d.products);
+
+          // Filtra estritamente adicionais de Lote 92
+          const remoteOpts = Array.isArray(d.optionals) ? d.optionals : [];
+          const loteOpts = remoteOpts.filter(o => o.store_id !== 'vilarica' && !String(o.id).startsWith('opt-vr-'));
+          d.optionals = loteOpts.length > 0 ? loteOpts : window.INITIAL_OPTIONALS;
+          setStored(STORAGE_KEYS.OPTIONALS, d.optionals);
+
           // SEMPRE sincroniza promoções do servidor, mesmo se vier vazio — evita que promoções
           // deletadas no admin continuem aparecendo para clientes com cache antigo no localStorage.
           if (Array.isArray(d.promotions)) setStored(STORAGE_KEYS.PROMOTIONS, d.promotions);
@@ -279,9 +355,9 @@
       return {
         settings: getStored(STORAGE_KEYS.SETTINGS, window.INITIAL_SETTINGS),
         hours: getStored(STORAGE_KEYS.HOURS, window.INITIAL_OPERATING_HOURS),
-        categories: getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES),
-        products: getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS),
-        optionals: getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS),
+        categories: getLoteCategories(),
+        products: getLoteProducts(),
+        optionals: getLoteOptionals(),
         promotions: getStored(STORAGE_KEYS.PROMOTIONS, window.INITIAL_PROMOTIONS),
         neighborhoods: getStored(STORAGE_KEYS.NEIGHBORHOODS, window.INITIAL_NEIGHBORHOODS || []),
         couriers: getStored(STORAGE_KEYS.COURIERS, window.INITIAL_COURIERS || [])
@@ -372,15 +448,17 @@
         return getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
       }
       try {
-        const result = await api('get-categories', 'GET');
-        if (result.data && result.data.length > 0) {
-          setStored(STORAGE_KEYS.CATEGORIES, result.data);
-          return result.data;
+        const result = await api('get-categories&store=lote92', 'GET');
+        if (result.data && Array.isArray(result.data)) {
+          const lote = result.data.filter(c => c.store_id !== 'vilarica' && !String(c.id).startsWith('cat-vr-') && !String(c.slug || '').endsWith('-vr'));
+          const finalCats = lote.length > 0 ? lote : window.INITIAL_CATEGORIES;
+          setStored(STORAGE_KEYS.CATEGORIES, finalCats);
+          return finalCats;
         }
       } catch (e) {
         console.warn('Erro ao buscar categorias via API:', e);
       }
-      return getStored(STORAGE_KEYS.CATEGORIES, window.INITIAL_CATEGORIES);
+      return getLoteCategories();
     },
 
     async saveCategory(cat, requestedStoreId) {
@@ -429,9 +507,11 @@
         }));
       }
       try {
-        const result = await api('get-products', 'GET');
+        const result = await api('get-products&store=lote92', 'GET');
         if (Array.isArray(result.data)) {
-          const normalized = result.data.map(p => ({
+          const lote = result.data.filter(p => p.store_id !== 'vilarica' && !String(p.id).startsWith('prod-vr-') && p.category_id !== 'cat-vr-brasa' && !String(p.category_id || '').endsWith('-vr'));
+          const finalProds = lote.length > 0 ? lote : window.INITIAL_PRODUCTS;
+          const normalized = finalProds.map(p => ({
             ...p,
             promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
           }));
@@ -441,7 +521,7 @@
       } catch (e) {
         console.warn('Erro ao buscar produtos via API:', e);
       }
-      const local = getStored(STORAGE_KEYS.PRODUCTS, window.INITIAL_PRODUCTS);
+      const local = getLoteProducts();
       return local.map(p => ({
         ...p,
         promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
@@ -507,15 +587,17 @@
         return getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
       }
       try {
-        const result = await api('get-optionals', 'GET');
+        const result = await api('get-optionals&store=lote92', 'GET');
         if (Array.isArray(result.data)) {
-          setStored(STORAGE_KEYS.OPTIONALS, result.data);
-          return result.data;
+          const lote = result.data.filter(o => o.store_id !== 'vilarica' && !String(o.id).startsWith('opt-vr-'));
+          const finalOpts = lote.length > 0 ? lote : window.INITIAL_OPTIONALS;
+          setStored(STORAGE_KEYS.OPTIONALS, finalOpts);
+          return finalOpts;
         }
       } catch (e) {
         console.warn('Erro ao buscar adicionais via API:', e);
       }
-      return getStored(STORAGE_KEYS.OPTIONALS, window.INITIAL_OPTIONALS);
+      return getLoteOptionals();
     },
 
     async saveOptional(opt, requestedStoreId) {

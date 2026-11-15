@@ -540,12 +540,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.db.getOrders(currentAdminStore)
       ]);
 
-      adminState.settings = bootstrap.settings || window.INITIAL_SETTINGS;
+      adminState.settings = bootstrap.settings || (currentAdminStore === 'vilarica' ? window.INITIAL_SETTINGS_VILARICA : window.INITIAL_SETTINGS);
       adminState.orders = orders || [];
-      adminState.products = bootstrap.products || [];
-      adminState.categories = bootstrap.categories || [];
-      adminState.optionals = bootstrap.optionals || [];
-      adminState.promotions = bootstrap.promotions || [];
+
+      if (currentAdminStore === 'vilarica') {
+        const vrCats = (bootstrap.categories || []).filter(c => (c.store_id === 'vilarica' || String(c.id).startsWith('cat-vr-') || String(c.slug || '').endsWith('-vr')));
+        adminState.categories = vrCats.length > 0 ? vrCats : window.INITIAL_CATEGORIES_VILARICA;
+
+        const vrProds = (bootstrap.products || []).filter(p => (p.store_id === 'vilarica' || String(p.id).startsWith('prod-vr-') || p.category_id === 'cat-vr-brasa' || String(p.category_id || '').endsWith('-vr')));
+        adminState.products = vrProds.length > 0 ? vrProds : window.INITIAL_PRODUCTS_VILARICA;
+
+        const vrOpts = (bootstrap.optionals || []).filter(o => (o.store_id === 'vilarica' || String(o.id).startsWith('opt-vr-')));
+        adminState.optionals = vrOpts.length > 0 ? vrOpts : window.INITIAL_OPTIONALS_VILARICA;
+
+        adminState.promotions = [];
+      } else {
+        const loteCats = (bootstrap.categories || []).filter(c => c.store_id !== 'vilarica' && !String(c.id).startsWith('cat-vr-') && !String(c.slug || '').endsWith('-vr'));
+        adminState.categories = loteCats.length > 0 ? loteCats : window.INITIAL_CATEGORIES;
+
+        const loteProds = (bootstrap.products || []).filter(p => p.store_id !== 'vilarica' && !String(p.id).startsWith('prod-vr-') && p.category_id !== 'cat-vr-brasa' && !String(p.category_id || '').endsWith('-vr'));
+        adminState.products = loteProds.length > 0 ? loteProds : window.INITIAL_PRODUCTS;
+
+        const loteOpts = (bootstrap.optionals || []).filter(o => o.store_id !== 'vilarica' && !String(o.id).startsWith('opt-vr-'));
+        adminState.optionals = loteOpts.length > 0 ? loteOpts : window.INITIAL_OPTIONALS;
+
+        adminState.promotions = bootstrap.promotions || window.INITIAL_PROMOTIONS;
+      }
+
       adminState.neighborhoods = bootstrap.neighborhoods || [];
       const defaultCouriers = window.INITIAL_COURIERS || [
         { id: 'courier-1', name: 'Paulo', phone: '', is_active: true },
