@@ -519,7 +519,14 @@ exports.handler = async function(event) {
     // -------------------------------------------------------
     if (method === 'GET' && path === 'get-orders') {
       const limit = Number(event.queryStringParameters?.limit) || 150;
-      const data = await supabaseFetch(`/orders?select=*,order_items(*)&order=created_at.desc&limit=${limit}`);
+      const store = event.queryStringParameters?.store;
+      let ordersUrl = `/orders?select=*,order_items(*)&order=created_at.desc&limit=${limit}`;
+      if (store === 'vilarica') {
+        ordersUrl += `&store_id=eq.vilarica`;
+      } else if (store === 'lote92') {
+        ordersUrl += `&or=(store_id.eq.lote92,store_id.is.null)`;
+      }
+      const data = await supabaseFetch(ordersUrl);
       return respond(200, { data });
     }
 

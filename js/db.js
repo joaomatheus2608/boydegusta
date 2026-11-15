@@ -686,29 +686,23 @@
     // ----------------------------------------
     async getOrders(requestedStoreId) {
       const activeStore = requestedStoreId || getCurrentStoreId();
-      if (activeStore === 'vilarica') {
-        const localVr = getStored('boydegusta_vr_orders', []);
-        return localVr.map(o => ({
-          ...o,
-          items: o.items || o.order_items || [],
-          table_number: o.table_number ? Number(o.table_number) : null
-        }));
-      }
+      const storageKey = activeStore === 'vilarica' ? 'boydegusta_vr_orders' : STORAGE_KEYS.ORDERS;
       try {
-        const result = await api('get-orders', 'GET');
+        // Ambas as lojas buscam do Supabase, filtrando por store_id
+        const result = await api(`get-orders&store=${activeStore}`, 'GET');
         if (result.data) {
           const normalized = result.data.map(o => ({
             ...o,
             items: o.order_items || o.items || [],
             table_number: o.table_number ? Number(o.table_number) : null
           }));
-          setStored(STORAGE_KEYS.ORDERS, normalized);
+          setStored(storageKey, normalized);
           return normalized;
         }
       } catch (e) {
         console.warn('Erro ao buscar pedidos via API:', e);
       }
-      const local = getStored(STORAGE_KEYS.ORDERS, []);
+      const local = getStored(storageKey, []);
       return local.map(o => ({
         ...o,
         items: o.items || o.order_items || [],
@@ -729,15 +723,7 @@
         items: orderPayload.items || []
       };
 
-      if (activeStore === 'vilarica') {
-        const currentVrOrders = getStored('boydegusta_vr_orders', []);
-        const maxNum = currentVrOrders.reduce((m, o) => Math.max(m, Number(o.order_number) || 0), 1000);
-        newOrder.id = newOrder.id || generateUuidOrId('order_vr');
-        newOrder.order_number = maxNum + 1;
-        setStored('boydegusta_vr_orders', [newOrder, ...currentVrOrders]);
-        return newOrder;
-      }
-
+      // AMBAS as lojas usam Supabase para pedidos (necessário para o admin ver em outro dispositivo)
       const apiPayload = { ...newOrder };
       // Se user_id não for UUID válido, remove do payload da API
       if (apiPayload.user_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(apiPayload.user_id)) {
@@ -793,12 +779,11 @@
         return o;
       });
       setStored(storageKey, updated);
-      if (activeStore !== 'vilarica') {
-        try {
-          await api('update-order', 'POST', { id: orderId, status: newStatus, payment_method: paymentMethod, courier_name: courierName });
-        } catch (e) {
-          console.warn('Erro ao atualizar pedido via API:', e);
-        }
+      // Ambas as lojas sincronizam status no Supabase
+      try {
+        await api('update-order', 'POST', { id: orderId, status: newStatus, payment_method: paymentMethod, courier_name: courierName });
+      } catch (e) {
+        console.warn('Erro ao atualizar pedido via API:', e);
       }
       return updated.find(o => o.id === orderId);
     },
