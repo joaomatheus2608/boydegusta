@@ -2056,7 +2056,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
 
             <div style="display: flex; gap: 8px;">
-              ${order.order_type === 'delivery' && order.status !== 'finalizado' && order.status !== 'cancelado' ? `
+              ${order.order_type === 'delivery' && order.status !== 'cancelado' ? `
                 <button type="button" class="btn-ghost-secondary btn-assign-courier-action" data-order-id="${order.id}" style="font-size: 0.8rem; border-color: #3b82f6; color: #2563eb;">
                   <i class="fi fi-sr-motorcycle"></i> ${order.courier_name ? `Trocar (${window.escapeHtml(order.courier_name)})` : 'Atribuir Entregador'}
                 </button>
@@ -2110,7 +2110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           newStatus = 'finalizado';
         }
 
-        await window.db.updateOrderStatus(orderId, newStatus, null, null, currentAdminStore);
+        await window.db.updateOrderStatus(orderId, newStatus, null, undefined, currentAdminStore);
         if (order) order.status = newStatus;
         renderSalonTables();
         renderDashboard();
@@ -2188,8 +2188,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.dispatchCouriersList.querySelectorAll('.courier-pick-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const courierName = btn.getAttribute('data-courier-name');
-        await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, courierName, currentAdminStore);
-        order.status = 'saiu_para_entrega';
+        const targetStatus = (order.status === 'finalizado') ? 'finalizado' : 'saiu_para_entrega';
+        await window.db.updateOrderStatus(orderId, targetStatus, null, courierName, currentAdminStore);
+        order.status = targetStatus;
         order.courier_name = courierName;
         
         dom.dispatchCourierModal.style.display = 'none';
@@ -2221,8 +2222,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { await window.db.saveCourier(newC); } catch {}
       }
 
-      await window.db.updateOrderStatus(orderId, 'saiu_para_entrega', null, customCourier, currentAdminStore);
-      order.status = 'saiu_para_entrega';
+      const targetStatus = (order.status === 'finalizado') ? 'finalizado' : 'saiu_para_entrega';
+      await window.db.updateOrderStatus(orderId, targetStatus, null, customCourier, currentAdminStore);
+      order.status = targetStatus;
       order.courier_name = customCourier;
       dom.dispatchCourierModal.style.display = 'none';
       renderOrders();
@@ -3906,8 +3908,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     dom.cashChannelDelivery.textContent = `${window.formatCurrency(deliveryRev)} (${deliveryCount} pedidos)`;
     dom.cashTotalDeliveryFees.textContent = window.formatCurrency(totalDeliveryFees);
 
-    // Acerto individual dos entregadores
-    renderCouriersReport(dayOrders, reportDate);
+    // Acerto individual dos entregadores (inclui pedidos finalizados e pedidos despachados em rota)
+    const courierDayOrders = adminState.orders.filter(o => {
+      const oDate = getBusinessDateString(o.created_at);
+      return oDate === reportDate && o.status !== 'cancelado' && (o.status === 'finalizado' || o.status === 'saiu_para_entrega');
+    });
+    renderCouriersReport(courierDayOrders, reportDate);
 
     // Atualiza status do caixa e histórico
     updateCashStatusBadge(reportDate);
@@ -4113,18 +4119,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function renderCouriersReport(dayOrders, reportDate) {
-    const couriers = adminState.couriers || [];
+    const couriersMap = new Map();
+    // 1. Entregadores cadastrados
+    (adminState.couriers || []).forEach(c => {
+      if (c && c.name && c.name.trim()) {
+        const trimmed = c.name.trim();
+        couriersMap.set(trimmed.toLowerCase(), { id: c.id, name: trimmed, is_active: c.is_active });
+      }
+    });
+    // 2. Entregadores atribuídos nos pedidos do dia (inclusive nomes digitados na hora)
+    dayOrders.forEach(o => {
+      if (o.courier_name && o.courier_name.trim()) {
+        const trimmed = o.courier_name.trim();
+        const key = trimmed.toLowerCase();
+        if (!couriersMap.has(key)) {
+          couriersMap.set(key, { id: 'courier-day-' + key, name: trimmed, is_active: true });
+        }
+      }
+    });
+
+    const couriers = Array.from(couriersMap.values());
     let html = '';
 
     couriers.forEach(courier => {
       const courierName = courier.name;
-      // Pedidos despachados ou entregues por este motoboy
-      const courierOrders = dayOrders.filter(o => o.courier_name && o.courier_name.toLowerCase() === courierName.toLowerCase());
+      // Pedidos despachados ou entregues por este motoboy (não cancelados)
+      const courierOrders = dayOrders.filter(o => o.courier_name && o.courier_name.trim().toLowerCase() === courierName.toLowerCase());
       
       const totalDeliveries = courierOrders.length;
-      let totalCollectedCash = 0; // Dinheiro que o motoboy recebeu do cliente
-      let totalFees = 0; // Taxas de entrega dos pedidos dele
+      let totalCollectedCash = 0; // Dinheiro recebido pelo motoboy (a devolver à loja)
+      let totalFees = 0; // Taxas de entrega dos pedidos dele (a pagar ao motoboy)
       let totalOrdersAmount = 0; // Valor somado dos pedidos dele
+      let pendingDispatchedCount = 0; // Pedidos ainda em rota
 
       let ordersRowsHtml = '';
       courierOrders.forEach(o => {
@@ -4137,21 +4163,56 @@ document.addEventListener('DOMContentLoaded', async () => {
           totalCollectedCash += ordTotal;
         }
 
+        const isFinished = o.status === 'finalizado';
+        if (!isFinished) pendingDispatchedCount++;
+        const statusBadge = isFinished 
+          ? `<span style="display: inline-block; padding: 2px 6px; font-size: 0.68rem; font-weight: 700; background: #dcfce7; color: #166534; border-radius: 4px;">✅ Entregue</span>`
+          : `<span style="display: inline-block; padding: 2px 6px; font-size: 0.68rem; font-weight: 700; background: #dbeafe; color: #1e40af; border-radius: 4px;">🛵 Em Rota</span>`;
+
         const neighborhoodName = o.delivery_address?.neighborhood || 'Entrega';
 
         ordersRowsHtml += `
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 4px 0; border-bottom: 1px dashed #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; align-items: center;">
             <div>
-              <strong>#${String(o.order_number).padStart(4, '0')}</strong> • ${window.escapeHtml(o.customer_name || 'Cliente')} (${window.escapeHtml(neighborhoodName)})
+              <strong>#${String(o.order_number).padStart(4, '0')}</strong> • ${window.escapeHtml(o.customer_name || 'Cliente')} (${window.escapeHtml(neighborhoodName)}) ${statusBadge}
               <div style="font-size: 0.72rem; color: #64748b;">Pagamento: ${window.escapeHtml((o.payment_method || '').toUpperCase())} ${o.change_for ? `(Troco: ${window.formatCurrency(o.change_for)})` : ''}</div>
             </div>
             <div style="text-align: right;">
               <strong style="color: #0f172a;">${window.formatCurrency(ordTotal)}</strong>
-              <div style="font-size: 0.72rem; color: #d97706;">Taxa: ${window.formatCurrency(ordFee)}</div>
+              <div style="font-size: 0.72rem; color: #d97706; font-weight: 700;">Taxa: ${window.formatCurrency(ordFee)}</div>
             </div>
           </div>
         `;
       });
+
+      const netBalance = totalCollectedCash - totalFees;
+      let settlementNoticeHtml = '';
+      if (totalDeliveries === 0) {
+        settlementNoticeHtml = '<span style="font-size: 0.8rem; color: #64748b;">Nenhuma entrega atribuída hoje.</span>';
+      } else if (netBalance > 0) {
+        settlementNoticeHtml = `
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 8px 10px; margin-top: 8px;">
+            <div style="font-size: 0.75rem; color: #065f46; font-weight: 600;">Acerto Financeiro:</div>
+            <div style="font-size: 1rem; font-weight: 800; color: #047857;">Motoboy REPASSA à Loja: ${window.formatCurrency(netBalance)}</div>
+            <div style="font-size: 0.72rem; color: #065f46;">(Recebeu ${window.formatCurrency(totalCollectedCash)} em dinheiro vivo - ${window.formatCurrency(totalFees)} de taxas a receber)</div>
+          </div>
+        `;
+      } else if (netBalance < 0) {
+        settlementNoticeHtml = `
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 10px; margin-top: 8px;">
+            <div style="font-size: 0.75rem; color: #92400e; font-weight: 600;">Acerto Financeiro:</div>
+            <div style="font-size: 1rem; font-weight: 800; color: #b45309;">Loja PAGA ao Motoboy: ${window.formatCurrency(Math.abs(netBalance))}</div>
+            <div style="font-size: 0.72rem; color: #92400e;">(Taxas a pagar: ${window.formatCurrency(totalFees)} - ${window.formatCurrency(totalCollectedCash)} recebido em dinheiro)</div>
+          </div>
+        `;
+      } else {
+        settlementNoticeHtml = `
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 10px; margin-top: 8px;">
+            <div style="font-size: 0.95rem; font-weight: 800; color: #1d4ed8;">Contas Zeradas (${window.formatCurrency(0)})</div>
+            <div style="font-size: 0.72rem; color: #1e40af;">Taxas devidas equivalem exatamente ao dinheiro recebido.</div>
+          </div>
+        `;
+      }
 
       html += `
         <div class="courier-report-card">
@@ -4161,7 +4222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <span style="font-size: 1.5rem;"><i class="fi fi-sr-motorcycle"></i></span>
                 <div>
                   <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800;">${window.escapeHtml(courierName)}</h4>
-                  <span style="font-size: 0.76rem; color: #64748b;">Entregador Oficial</span>
+                  <span style="font-size: 0.76rem; color: #64748b;">Entregador</span>
                 </div>
               </div>
               <span class="order-type-badge delivery" style="font-size: 0.8rem;">${totalDeliveries} entrega(s)</span>
@@ -4173,12 +4234,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
 
             <div class="courier-stat-row">
-              <span><i class="fi fi-sr-money-bill-wave"></i> Dinheiro Recebido na Entrega (a repassar):</span>
+              <span><i class="fi fi-sr-money-bill-wave"></i> Dinheiro Recebido na Entrega (a devolver):</span>
               <strong style="color: #2563eb;">${window.formatCurrency(totalCollectedCash)}</strong>
             </div>
 
             <div class="courier-stat-row">
-              <span><i class="fi fi-sr-motorcycle"></i> Total das Taxas de Entrega:</span>
+              <span><i class="fi fi-sr-motorcycle"></i> Total das Taxas de Entrega (a pagar):</span>
               <strong style="color: #16a34a;">${window.formatCurrency(totalFees)}</strong>
             </div>
 
@@ -4187,14 +4248,21 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong>${window.formatCurrency(totalOrdersAmount)}</strong>
             </div>
 
-            <div style="margin-top: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto;">
+            ${settlementNoticeHtml}
+
+            <div style="margin-top: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; max-height: 160px; overflow-y: auto;">
               <div style="font-size: 0.76rem; font-weight: 700; color: #64748b; margin-bottom: 4px;">Extrato de Entregas:</div>
               ${ordersRowsHtml || '<div style="font-size: 0.78rem; color: #94a3b8; text-align: center; padding: 8px;">Nenhuma entrega atribuída nesta data.</div>'}
             </div>
           </div>
 
-          <div style="margin-top: 14px; display: flex; gap: 8px;">
-            <button type="button" class="btn-ghost-secondary btn-print-courier-settlement" data-courier="${window.escapeHtml(courierName)}" style="flex: 1; font-size: 0.8rem; font-weight: 700;">
+          <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+            ${pendingDispatchedCount > 0 ? `
+              <button type="button" class="btn-ghost-secondary btn-finalize-all-courier-orders" data-courier="${window.escapeHtml(courierName)}" style="font-size: 0.8rem; font-weight: 700; color: #166534; border-color: #22c55e; background: #f0fdf4;">
+                <i class="fi fi-sr-check"></i> Finalizar ${pendingDispatchedCount} entrega(s) em rota
+              </button>
+            ` : ''}
+            <button type="button" class="btn-ghost-secondary btn-print-courier-settlement" data-courier="${window.escapeHtml(courierName)}" style="font-size: 0.8rem; font-weight: 700;">
               <i class="fi fi-sr-print"></i> Imprimir Acerto (${window.escapeHtml(courierName)})
             </button>
           </div>
@@ -4210,13 +4278,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         printCourierSettlement(cName, reportDate);
       });
     });
+
+    dom.couriersReportContainer.querySelectorAll('.btn-finalize-all-courier-orders').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const cName = btn.getAttribute('data-courier');
+        if (!confirm(`Deseja marcar todas as entregas em rota de "${cName}" como FINALIZADAS?`)) return;
+        btn.disabled = true;
+        btn.textContent = 'Finalizando entregas...';
+        const pendingOrders = dayOrders.filter(o => o.courier_name && o.courier_name.trim().toLowerCase() === cName.toLowerCase() && o.status === 'saiu_para_entrega');
+        for (const ord of pendingOrders) {
+          try {
+            await window.db.updateOrderStatus(ord.id, 'finalizado', null, undefined, currentAdminStore);
+            ord.status = 'finalizado';
+          } catch (e) {
+            console.warn('Erro ao finalizar pedido:', ord.id, e);
+          }
+        }
+        renderOrders();
+        renderCashReport();
+        renderDashboard();
+      });
+    });
   }
 
   // Impressão do Acerto Individual do Entregador
   function printCourierSettlement(courierName, reportDate) {
     const dayOrders = adminState.orders.filter(o => {
       const oDate = getBusinessDateString(o.created_at);
-      return oDate === reportDate && o.status === 'finalizado' && o.courier_name && o.courier_name.toLowerCase() === courierName.toLowerCase();
+      return oDate === reportDate && 
+             o.status !== 'cancelado' && 
+             (o.status === 'finalizado' || o.status === 'saiu_para_entrega') && 
+             o.courier_name && 
+             o.courier_name.trim().toLowerCase() === courierName.toLowerCase();
     });
 
     let deliveriesStr = '';
@@ -4231,9 +4324,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       totalFees += ordFee;
       if (o.payment_method === 'dinheiro') totalCash += ordTotal;
 
+      const stLabel = o.status === 'finalizado' ? 'ENTREGUE' : 'EM ROTA';
+
       deliveriesStr += `
         <div>
-          ${idx + 1}. Pedido #${String(o.order_number).padStart(4, '0')} - ${window.escapeHtml(o.customer_name || 'Cliente')}<br />
+          ${idx + 1}. Pedido #${String(o.order_number).padStart(4, '0')} [${stLabel}] - ${window.escapeHtml(o.customer_name || 'Cliente')}<br />
           &nbsp;&nbsp;Bairro: ${window.escapeHtml(o.delivery_address?.neighborhood || 'N/A')}<br />
           &nbsp;&nbsp;Pag: ${window.escapeHtml((o.payment_method || '').toUpperCase())} | Valor: ${window.formatCurrency(ordTotal)} | Taxa: ${window.formatCurrency(ordFee)}
         </div>
@@ -4291,6 +4386,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div><strong>Dinheiro em Mãos:</strong> ${window.formatCurrency(totalCash)}</div>
             <div><strong>Total de Taxas:</strong> ${window.formatCurrency(totalFees)}</div>
             <div style="font-size: 16px; font-weight: 900; margin-top: 4px;">Total Pedidos: ${window.formatCurrency(totalOrders)}</div>
+            <div style="margin-top: 6px; font-size: 15px; font-weight: 900; border: 2px solid #000; padding: 4px;">
+              ${(totalCash - totalFees) > 0 
+                ? `ENTREGADOR DEVOLVE: ${window.formatCurrency(totalCash - totalFees)}` 
+                : ((totalFees - totalCash) > 0 
+                    ? `LOJA PAGA AO MOTOBOY: ${window.formatCurrency(totalFees - totalCash)}` 
+                    : 'CONTAS ZERADAS (R$ 0,00)')}
+            </div>
             <hr />
             <div style="font-weight: 900; margin-bottom: 4px; font-size: 15px;">LISTAGEM DAS ENTREGAS:</div>
             ${deliveriesStr || '<div>Nenhuma entrega registrada.</div>'}
@@ -4352,16 +4454,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // Entregadores
+    // Entregadores (inclui pedidos finalizados e despachados em rota)
     let couriersStr = '';
-    const couriers = adminState.couriers || [];
-    couriers.forEach(c => {
-      const cOrders = dayOrders.filter(o => o.courier_name && o.courier_name.toLowerCase() === c.name.toLowerCase());
-      const cCash = cOrders.filter(o => o.payment_method === 'dinheiro').reduce((s, o) => s + (Number(o.total) || 0), 0);
-      const cFees = cOrders.reduce((s, o) => s + (Number(o.delivery_fee) || 0), 0);
-      couriersStr += `
-        <div style="margin: 3px auto; text-align: center;">🛵 <strong>${window.escapeHtml(c.name)}:</strong> ${cOrders.length} ped | ${window.formatCurrency(cFees)} | Dinheiro: ${window.formatCurrency(cCash)}</div>
-      `;
+    const allCourierOrders = adminState.orders.filter(o => {
+      const oDate = getBusinessDateString(o.created_at);
+      return oDate === reportDate && o.status !== 'cancelado' && (o.status === 'finalizado' || o.status === 'saiu_para_entrega');
+    });
+    const summaryCouriersMap = new Map();
+    (adminState.couriers || []).forEach(c => { if (c?.name) summaryCouriersMap.set(c.name.trim().toLowerCase(), c.name.trim()); });
+    allCourierOrders.forEach(o => { if (o.courier_name) summaryCouriersMap.set(o.courier_name.trim().toLowerCase(), o.courier_name.trim()); });
+
+    summaryCouriersMap.forEach((cName) => {
+      const cOrders = allCourierOrders.filter(o => o.courier_name && o.courier_name.trim().toLowerCase() === cName.toLowerCase());
+      if (cOrders.length > 0) {
+        const cCash = cOrders.filter(o => o.payment_method === 'dinheiro').reduce((s, o) => s + (Number(o.total) || 0), 0);
+        const cFees = cOrders.reduce((s, o) => s + (Number(o.delivery_fee) || 0), 0);
+        couriersStr += `
+          <div style="margin: 3px auto; text-align: center;">🛵 <strong>${window.escapeHtml(cName)}:</strong> ${cOrders.length} ped | Taxas: ${window.formatCurrency(cFees)} | Dinheiro: ${window.formatCurrency(cCash)}</div>
+        `;
+      }
     });
 
     const printWin = window.open('', '_blank', 'width=400,height=600');

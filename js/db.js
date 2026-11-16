@@ -774,6 +774,7 @@
       const updated = orders.map(o => {
         if (o.id === orderId) {
           const u = { ...o, status: newStatus, payment_method: paymentMethod || o.payment_method, updated_at: new Date().toISOString() };
+          // Preserva courier_name se não foi explicitamente enviado (undefined)
           if (courierName !== undefined) u.courier_name = courierName;
           return u;
         }
@@ -782,7 +783,10 @@
       setStored(storageKey, updated);
       // Ambas as lojas sincronizam status no Supabase
       try {
-        await api('update-order', 'POST', { id: orderId, status: newStatus, payment_method: paymentMethod, courier_name: courierName });
+        const apiPayload = { id: orderId, status: newStatus };
+        if (paymentMethod) apiPayload.payment_method = paymentMethod;
+        if (courierName !== undefined) apiPayload.courier_name = courierName;
+        await api('update-order', 'POST', apiPayload);
       } catch (e) {
         console.warn('Erro ao atualizar pedido via API:', e);
       }
