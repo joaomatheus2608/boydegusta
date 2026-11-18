@@ -545,9 +545,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (currentAdminStore === 'vilarica') {
         const vrCats = (bootstrap.categories || []).filter(c => (c.store_id === 'vilarica' || String(c.id).startsWith('cat-vr-') || String(c.slug || '').endsWith('-vr')));
-        adminState.categories = vrCats.length > 0 ? vrCats : window.INITIAL_CATEGORIES_VILARICA;
+        adminState.categories = (vrCats.length > 0 ? vrCats : window.INITIAL_CATEGORIES_VILARICA).sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
 
-        const vrProds = (bootstrap.products || []).filter(p => (p.store_id === 'vilarica' || String(p.id).startsWith('prod-vr-') || p.category_id === 'cat-vr-brasa' || String(p.category_id || '').endsWith('-vr')));
+        const vrProds = (bootstrap.products || []).filter(p => (p.store_id === 'vilarica' || String(p.id).startsWith('prod-vr-') || String(p.category_id || '').startsWith('cat-vr-') || p.category_id === 'cat-vr-brasa' || String(p.category_id || '').endsWith('-vr')));
         adminState.products = vrProds.length > 0 ? vrProds : window.INITIAL_PRODUCTS_VILARICA;
 
         const vrOpts = (bootstrap.optionals || []).filter(o => (o.store_id === 'vilarica' || String(o.id).startsWith('opt-vr-')));
@@ -3171,10 +3171,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   function renderCategories() {
     let html = '';
+    adminState.categories.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
     adminState.categories.forEach(c => {
       html += `
         <tr>
-          <td>${c.order_index || 0}</td>
+          <td><strong>${c.order_index || 0}</strong></td>
           <td><strong>${window.escapeHtml(c.name)}</strong></td>
           <td><code style="color: #64748b;">${window.escapeHtml(c.slug || '')}</code></td>
           <td>
@@ -3224,13 +3225,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       dom.categoryModalTitle.textContent = 'Editar Categoria';
       dom.editCatId.value = cat.id;
       dom.editCatName.value = cat.name || '';
-      dom.editCatOrder.value = cat.order_index !== undefined ? cat.order_index : 0;
+      dom.editCatOrder.value = cat.order_index !== undefined ? cat.order_index : 1;
       dom.editCatActive.value = String(cat.is_active !== false);
     } else {
       dom.categoryModalTitle.textContent = 'Nova Categoria';
       dom.editCatId.value = '';
       dom.editCatName.value = '';
-      dom.editCatOrder.value = adminState.categories.length + 1;
+      dom.editCatOrder.value = (adminState.categories.length + 1) || 1;
       dom.editCatActive.value = 'true';
     }
     dom.categoryEditModal.style.display = 'flex';
@@ -3244,19 +3245,54 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       const id = dom.editCatId.value;
       const name = dom.editCatName.value.trim();
-      const order_index = Number(dom.editCatOrder.value) || 0;
+      const requestedOrder = Math.max(1, Number(dom.editCatOrder.value) || 1);
       const is_active = dom.editCatActive.value === 'true';
 
       if (!name) return;
-      const payload = { name, order_index, is_active };
+      const payload = { 
+        name, 
+        order_index: requestedOrder, 
+        is_active,
+        store_id: currentAdminStore 
+      };
       if (id) payload.id = id;
 
+      // 1. Salva a categoria atual
       const saved = await window.db.saveCategory(payload, currentAdminStore);
-      if (id) {
-        adminState.categories = adminState.categories.map(c => c.id === id ? saved : c);
-      } else {
-        adminState.categories.push(saved);
+
+      // 2. REORDENAÇÃO AUTOMÁTICA INTELIGENTE:
+      // Se já existem categorias com ordem >= requestedOrder, empurra as outras para frente automaticamente
+      const otherCats = (adminState.categories || []).filter(c => c.id !== (id || saved.id));
+      otherCats.sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
+
+      let currentOrderCounter = 1;
+      const catsToUpdate = [];
+
+      for (const c of otherCats) {
+        if (currentOrderCounter === requestedOrder) {
+          // Reserva a posição para a categoria salva
+          currentOrderCounter++;
+        }
+        if (Number(c.order_index) !== currentOrderCounter) {
+          c.order_index = currentOrderCounter;
+          catsToUpdate.push(c);
+        }
+        currentOrderCounter++;
       }
+
+      // Salva as categorias que mudaram de posição para persistir a nova ordem
+      for (const catToSave of catsToUpdate) {
+        try {
+          await window.db.saveCategory(catToSave, currentAdminStore);
+        } catch (err) {
+          console.warn('Erro ao atualizar ordem de categoria:', catToSave.name, err);
+        }
+      }
+
+      // 3. Atualiza estado local ordenado
+      const refreshedCats = await window.db.getCategories(currentAdminStore);
+      adminState.categories = (refreshedCats || []).sort((a, b) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
+
       dom.categoryEditModal.style.display = 'none';
       renderCategories();
       renderProducts();

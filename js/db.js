@@ -272,13 +272,36 @@
       const activeStore = requestedStoreId || getCurrentStoreId();
       if (activeStore === 'vilarica') {
         const vrSettings = getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
-        const vrCategories = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
+        const vrCategoriesRaw = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
+        // Normalização garantindo que toda categoria da Vila Rica tenha id único, store_id e slug consistente
+        const vrCategories = vrCategoriesRaw.map((c, idx) => {
+          const cleanName = String(c.name || 'Categoria').trim();
+          const baseSlug = (c.slug || cleanName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const finalSlug = baseSlug.endsWith('-vr') ? baseSlug : (baseSlug + '-vr');
+          const catId = c.id || ('cat-vr-' + (baseSlug.replace(/-vr$/, '') || (Date.now() + '-' + idx)));
+          return {
+            ...c,
+            id: catId,
+            name: cleanName,
+            store_id: 'vilarica',
+            slug: finalSlug,
+            order_index: c.order_index !== undefined ? Number(c.order_index) : (idx + 1),
+            is_active: c.is_active !== false
+          };
+        });
+        setStored('boydegusta_vr_categories', vrCategories);
+
         const vrProductsRaw = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
-        // Migração: substituir URLs Unsplash/wsrv por boylogo.jpg
-        const vrProducts = vrProductsRaw.map(p => ({
-          ...p,
-          image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg')
-        }));
+        // Normalização garantindo que todo produto da Vila Rica tenha id único, store_id e imagem válida
+        const vrProducts = vrProductsRaw.map((p, idx) => {
+          const prodId = p.id || ('prod-vr-' + (Date.now() + '-' + idx));
+          return {
+            ...p,
+            id: prodId,
+            store_id: 'vilarica',
+            image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg')
+          };
+        });
         setStored('boydegusta_vr_products', vrProducts);
         const vrOptionals = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
         const vrHours = getStored('boydegusta_vr_hours', window.INITIAL_OPERATING_HOURS);
@@ -468,14 +491,27 @@
     },
 
     async saveCategory(cat, requestedStoreId) {
-      const activeStore = requestedStoreId || getCurrentStoreId();
+      const activeStore = requestedStoreId || cat.store_id || getCurrentStoreId();
       if (activeStore === 'vilarica') {
         const list = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
-        const idx = list.findIndex(c => c.id === cat.id);
-        if (idx >= 0) list[idx] = cat;
-        else list.push(cat);
+        const cleanName = String(cat.name || 'Categoria').trim();
+        const baseSlug = (cat.slug || cleanName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const finalSlug = baseSlug.endsWith('-vr') ? baseSlug : (baseSlug + '-vr');
+        const catId = cat.id || ('cat-vr-' + (baseSlug.replace(/-vr$/, '') || Date.now()));
+        const normalizedCat = {
+          ...cat,
+          id: catId,
+          name: cleanName,
+          store_id: 'vilarica',
+          slug: finalSlug,
+          order_index: cat.order_index !== undefined ? Number(cat.order_index) : (list.length + 1),
+          is_active: cat.is_active !== false
+        };
+        const idx = list.findIndex(c => c.id === normalizedCat.id);
+        if (idx >= 0) list[idx] = normalizedCat;
+        else list.push(normalizedCat);
         setStored('boydegusta_vr_categories', list);
-        return cat;
+        return normalizedCat;
       }
       const result = await api('save-category', 'POST', cat);
       const saved = result?.data || cat;
@@ -539,9 +575,13 @@
       const normalizedDays = window.normalizePromoDays ? window.normalizePromoDays(prod.promo_days, prod.monday_price) : (Array.isArray(prod.promo_days) ? prod.promo_days : []);
       const rawPromoPrice = (prod.promo_price !== null && prod.promo_price !== undefined && prod.promo_price !== '') ? Number(prod.promo_price) : null;
       
+      const prodId = prod.id || (activeStore === 'vilarica' ? ('prod-vr-' + Date.now()) : undefined);
+
       const payload = {
         ...prod,
+        ...(prodId ? { id: prodId } : {}),
         store_id: activeStore,
+        image_url: prod.image_url || (activeStore === 'vilarica' ? 'boylogo.jpg' : null),
         price: (prod.price !== null && prod.price !== undefined && prod.price !== '') ? Number(prod.price) : null,
         promo_price: rawPromoPrice,
         promo_days: normalizedDays,
@@ -552,7 +592,7 @@
 
       if (activeStore === 'vilarica') {
         const list = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
-        const idx = list.findIndex(p => p.id === prod.id);
+        const idx = list.findIndex(p => p.id === payload.id);
         if (idx >= 0) list[idx] = payload;
         else list.push(payload);
         setStored('boydegusta_vr_products', list);

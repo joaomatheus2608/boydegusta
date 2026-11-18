@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const vrCats = (bootstrap.categories || []).filter(c => (c.store_id === 'vilarica' || String(c.id).startsWith('cat-vr-') || String(c.slug || '').endsWith('-vr')) && c.is_active !== false);
         state.categories = (vrCats.length > 0 ? vrCats : window.INITIAL_CATEGORIES_VILARICA).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
-        const vrProds = (bootstrap.products || []).filter(p => (p.store_id === 'vilarica' || String(p.id).startsWith('prod-vr-') || p.category_id === 'cat-vr-brasa' || String(p.category_id || '').endsWith('-vr')) && p.is_active !== false);
+        const vrProds = (bootstrap.products || []).filter(p => (p.store_id === 'vilarica' || String(p.id).startsWith('prod-vr-') || String(p.category_id || '').startsWith('cat-vr-') || p.category_id === 'cat-vr-brasa' || String(p.category_id || '').endsWith('-vr')) && p.is_active !== false);
         state.products = vrProds.length > 0 ? vrProds : window.INITIAL_PRODUCTS_VILARICA;
 
         const vrOpts = (bootstrap.optionals || []).filter(o => (o.store_id === 'vilarica' || String(o.id).startsWith('opt-vr-')) && o.is_active !== false);

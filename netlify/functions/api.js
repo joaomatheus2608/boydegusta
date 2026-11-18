@@ -246,6 +246,7 @@ exports.handler = async function(event) {
         order_index: Number(cat.order_index) || 0,
         is_active: cat.is_active !== false
       };
+      if (cat.store_id) cleanPayload.store_id = cat.store_id;
       let data;
       if (cat.id && /^[0-9a-f-]{36}$/i.test(cat.id)) {
         data = await supabaseFetch(`/categories?id=eq.${cat.id}`, {
@@ -322,6 +323,7 @@ exports.handler = async function(event) {
 
       const cleanPayload = {
         name: String(prod.name || '').trim(),
+        store_id: prod.store_id || 'lote92',
         category_id: categoryId,
         description: prod.description ? String(prod.description).trim() : '',
         price: (prod.price !== null && prod.price !== undefined && prod.price !== '') ? Number(prod.price) : null,
