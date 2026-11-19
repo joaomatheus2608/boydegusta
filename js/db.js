@@ -271,51 +271,61 @@
     async getBootstrap(requestedStoreId) {
       const activeStore = requestedStoreId || getCurrentStoreId();
       if (activeStore === 'vilarica') {
+        try {
+          const result = await api('get-bootstrap&store=vilarica', 'GET');
+          if (result && result.data) {
+            const d = result.data;
+            if (d.settings) setStored('boydegusta_vr_settings', d.settings);
+            if (d.hours && Array.isArray(d.hours)) setStored('boydegusta_vr_hours', d.hours);
+
+            const remoteCats = Array.isArray(d.categories) ? d.categories : [];
+            const vrCats = remoteCats.length > 0 ? remoteCats : (window.INITIAL_CATEGORIES_VILARICA || []);
+            setStored('boydegusta_vr_categories', vrCats);
+            d.categories = vrCats;
+
+            const remoteProds = Array.isArray(d.products) ? d.products : [];
+            const vrProds = remoteProds.map(p => ({
+              ...p,
+              image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg')
+            }));
+            const finalProds = vrProds.length > 0 ? vrProds : (window.INITIAL_PRODUCTS_VILARICA || []);
+            setStored('boydegusta_vr_products', finalProds);
+            d.products = finalProds;
+
+            const remoteOpts = Array.isArray(d.optionals) ? d.optionals : [];
+            const vrOpts = remoteOpts.length > 0 ? remoteOpts : (window.INITIAL_OPTIONALS_VILARICA || []);
+            setStored('boydegusta_vr_optionals', vrOpts);
+            d.optionals = vrOpts;
+
+            if (!d.neighborhoods || d.neighborhoods.length === 0) d.neighborhoods = getStored('boydegusta_vr_neighborhoods', window.INITIAL_NEIGHBORHOODS || []);
+            if (!d.couriers || d.couriers.length === 0) d.couriers = getStored('boydegusta_vr_couriers', window.INITIAL_COURIERS || []);
+            d.promotions = d.promotions || [];
+            return d;
+          }
+        } catch (e) {
+          console.warn('Erro ao carregar bootstrap Vila Rica via API, usando localStorage:', e);
+        }
+        // Fallback localStorage
         const vrSettings = getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
         const vrCategoriesRaw = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
-        // Normalização garantindo que toda categoria da Vila Rica tenha id único, store_id e slug consistente
         const vrCategories = vrCategoriesRaw.map((c, idx) => {
           const cleanName = String(c.name || 'Categoria').trim();
           const baseSlug = (c.slug || cleanName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           const finalSlug = baseSlug.endsWith('-vr') ? baseSlug : (baseSlug + '-vr');
           const catId = c.id || ('cat-vr-' + (baseSlug.replace(/-vr$/, '') || (Date.now() + '-' + idx)));
-          return {
-            ...c,
-            id: catId,
-            name: cleanName,
-            store_id: 'vilarica',
-            slug: finalSlug,
-            order_index: c.order_index !== undefined ? Number(c.order_index) : (idx + 1),
-            is_active: c.is_active !== false
-          };
+          return { ...c, id: catId, name: cleanName, store_id: 'vilarica', slug: finalSlug, order_index: c.order_index !== undefined ? Number(c.order_index) : (idx + 1), is_active: c.is_active !== false };
         });
-        setStored('boydegusta_vr_categories', vrCategories);
-
         const vrProductsRaw = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
-        // Normalização garantindo que todo produto da Vila Rica tenha id único, store_id e imagem válida
-        const vrProducts = vrProductsRaw.map((p, idx) => {
-          const prodId = p.id || ('prod-vr-' + (Date.now() + '-' + idx));
-          return {
-            ...p,
-            id: prodId,
-            store_id: 'vilarica',
-            image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg')
-          };
-        });
-        setStored('boydegusta_vr_products', vrProducts);
-        const vrOptionals = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
-        const vrHours = getStored('boydegusta_vr_hours', window.INITIAL_OPERATING_HOURS);
-        const vrNeighborhoods = getStored('boydegusta_vr_neighborhoods', window.INITIAL_NEIGHBORHOODS || []);
-        const vrCouriers = getStored('boydegusta_vr_couriers', window.INITIAL_COURIERS || []);
+        const vrProducts = vrProductsRaw.map((p, idx) => ({ ...p, id: p.id || ('prod-vr-' + (Date.now() + '-' + idx)), store_id: 'vilarica', image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg') }));
         return {
           settings: vrSettings,
-          hours: vrHours,
+          hours: getStored('boydegusta_vr_hours', window.INITIAL_OPERATING_HOURS),
           categories: vrCategories,
           products: vrProducts,
-          optionals: vrOptionals,
+          optionals: getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []),
           promotions: [],
-          neighborhoods: vrNeighborhoods,
-          couriers: vrCouriers
+          neighborhoods: getStored('boydegusta_vr_neighborhoods', window.INITIAL_NEIGHBORHOODS || []),
+          couriers: getStored('boydegusta_vr_couriers', window.INITIAL_COURIERS || [])
         };
       }
 
@@ -419,6 +429,7 @@
         const current = getStored('boydegusta_vr_settings', window.INITIAL_SETTINGS_VILARICA);
         const updated = { ...current, ...newSettings, updated_at: new Date().toISOString() };
         setStored('boydegusta_vr_settings', updated);
+        try { await api('update-settings', 'POST', { ...updated, store_id: 'vilarica' }); } catch (e) { console.warn('Erro ao salvar settings VR no Supabase:', e); }
         return updated;
       }
       const current = getStored(STORAGE_KEYS.SETTINGS, window.INITIAL_SETTINGS);
@@ -474,6 +485,15 @@
     async getCategories(requestedStoreId) {
       const activeStore = requestedStoreId || getCurrentStoreId();
       if (activeStore === 'vilarica') {
+        try {
+          const result = await api('get-categories&store=vilarica', 'GET');
+          if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+            setStored('boydegusta_vr_categories', result.data);
+            return result.data;
+          }
+        } catch (e) {
+          console.warn('Erro ao buscar categorias VR via API:', e);
+        }
         return getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
       }
       try {
@@ -507,9 +527,19 @@
           order_index: cat.order_index !== undefined ? Number(cat.order_index) : (list.length + 1),
           is_active: cat.is_active !== false
         };
+        // Tenta salvar no Supabase primeiro
+        try {
+          const result = await api('save-category', 'POST', normalizedCat);
+          const saved = result?.data || normalizedCat;
+          const idx = list.findIndex(c => c.id === normalizedCat.id || c.id === saved.id);
+          if (idx >= 0) list[idx] = saved; else list.push(saved);
+          setStored('boydegusta_vr_categories', list);
+          return saved;
+        } catch (e) {
+          console.warn('Erro ao salvar categoria VR no Supabase, salvando localStorage:', e);
+        }
         const idx = list.findIndex(c => c.id === normalizedCat.id);
-        if (idx >= 0) list[idx] = normalizedCat;
-        else list.push(normalizedCat);
+        if (idx >= 0) list[idx] = normalizedCat; else list.push(normalizedCat);
         setStored('boydegusta_vr_categories', list);
         return normalizedCat;
       }
@@ -528,6 +558,7 @@
       if (activeStore === 'vilarica') {
         const list = getStored('boydegusta_vr_categories', window.INITIAL_CATEGORIES_VILARICA || []);
         setStored('boydegusta_vr_categories', list.filter(c => c.id !== id));
+        try { await api('delete-category', 'DELETE', { id }); } catch (e) { console.warn('Erro ao deletar categoria VR no Supabase:', e); }
         return true;
       }
       await api('delete-category', 'DELETE', { id });
@@ -542,6 +573,20 @@
     async getProducts(requestedStoreId) {
       const activeStore = requestedStoreId || getCurrentStoreId();
       if (activeStore === 'vilarica') {
+        try {
+          const result = await api('get-products&store=vilarica', 'GET');
+          if (Array.isArray(result.data) && result.data.length > 0) {
+            const vrProds = result.data.map(p => ({
+              ...p,
+              image_url: (p.image_url && (p.image_url.startsWith('https://images.unsplash') || p.image_url.startsWith('https://wsrv'))) ? 'boylogo.jpg' : (p.image_url || 'boylogo.jpg'),
+              promo_days: window.normalizePromoDays ? window.normalizePromoDays(p.promo_days, p.monday_price) : (Array.isArray(p.promo_days) ? p.promo_days : [])
+            }));
+            setStored('boydegusta_vr_products', vrProds);
+            return vrProds;
+          }
+        } catch (e) {
+          console.warn('Erro ao buscar produtos VR via API:', e);
+        }
         const localVr = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
         return localVr.map(p => ({
           ...p,
@@ -596,6 +641,17 @@
         if (idx >= 0) list[idx] = payload;
         else list.push(payload);
         setStored('boydegusta_vr_products', list);
+        // Tenta salvar no Supabase também
+        try {
+          const result = await api('save-product', 'POST', payload);
+          const saved = result?.data || payload;
+          const idx2 = list.findIndex(p => p.id === payload.id || p.id === saved.id);
+          if (idx2 >= 0) list[idx2] = saved; else list[list.length - 1] = saved;
+          setStored('boydegusta_vr_products', list);
+          return saved;
+        } catch (e) {
+          console.warn('Erro ao salvar produto VR no Supabase, mantido no localStorage:', e);
+        }
         return payload;
       }
 
@@ -616,6 +672,7 @@
       if (activeStore === 'vilarica') {
         const list = getStored('boydegusta_vr_products', window.INITIAL_PRODUCTS_VILARICA || []);
         setStored('boydegusta_vr_products', list.filter(p => p.id !== id));
+        try { await api('delete-product', 'DELETE', { id }); } catch (e) { console.warn('Erro ao deletar produto VR no Supabase:', e); }
         return true;
       }
       await api('delete-product', 'DELETE', { id });
@@ -630,6 +687,15 @@
     async getOptionals(requestedStoreId) {
       const activeStore = requestedStoreId || getCurrentStoreId();
       if (activeStore === 'vilarica') {
+        try {
+          const result = await api('get-optionals&store=vilarica', 'GET');
+          if (Array.isArray(result.data) && result.data.length > 0) {
+            setStored('boydegusta_vr_optionals', result.data);
+            return result.data;
+          }
+        } catch (e) {
+          console.warn('Erro ao buscar adicionais VR via API:', e);
+        }
         return getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
       }
       try {
@@ -656,6 +722,17 @@
         if (idx >= 0) list[idx] = payload;
         else list.push(payload);
         setStored('boydegusta_vr_optionals', list);
+        // Tenta salvar no Supabase também
+        try {
+          const result = await api('save-optional', 'POST', payload);
+          const saved = result?.data || payload;
+          const idx2 = list.findIndex(o => o.id === opt.id || o.id === saved.id);
+          if (idx2 >= 0) list[idx2] = saved;
+          setStored('boydegusta_vr_optionals', list);
+          return saved;
+        } catch (e) {
+          console.warn('Erro ao salvar adicional VR no Supabase, mantido no localStorage:', e);
+        }
         return payload;
       }
 
@@ -676,6 +753,7 @@
       if (activeStore === 'vilarica') {
         const list = getStored('boydegusta_vr_optionals', window.INITIAL_OPTIONALS_VILARICA || []);
         setStored('boydegusta_vr_optionals', list.filter(o => o.id !== id));
+        try { await api('delete-optional', 'DELETE', { id }); } catch (e) { console.warn('Erro ao deletar adicional VR no Supabase:', e); }
         return true;
       }
       await api('delete-optional', 'DELETE', { id });
